@@ -12,7 +12,7 @@ const supabase = createClient(
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 // Modelo Flash é mais rápido e barato para essa tarefa
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" }); 
+const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" }); 
 
 const twitterClient = new TwitterApi({
   appKey: process.env.TWITTER_APP_KEY!,
@@ -32,9 +32,15 @@ export async function GET(req: NextRequest) {
 
     // 2. Buscar Notícias (Tecnologia/Business no Brasil)
     const newsRes = await fetch(
-      `https://newsapi.org/v2/top-headlines?country=br&category=technology&apiKey=${process.env.NEWS_API_KEY}`
+      `https://newsapi.org/v2/top-headlines?country=us&category=technology&apiKey=${process.env.NEWS_API_KEY}`
     );
     const newsData = await newsRes.json();
+
+    // --- INÍCIO DO DEBUG (ADICIONE ISSO) ---
+    console.log('📡 Status NewsAPI:', newsData.status);
+    console.log('📊 Total de Resultados:', newsData.totalResults);
+    console.log('articles array length:', newsData.articles ? newsData.articles.length : 0);
+    // --- FIM DO DEBUG ---
 
     if (newsData.status !== 'ok') throw new Error('Falha ao buscar NewsAPI');
 
