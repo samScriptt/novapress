@@ -21,36 +21,31 @@ const twitterClient = new TwitterApi({
   accessSecret: process.env.TWITTER_ACCESS_SECRET!,
 });
 
+const BLACKLIST_DOMAINS = 'prnewswire.com,businesswire.com,marketwatch.com,globenewswire.com';
+const KEYWORDS = '(AI OR "Artificial Intelligence" OR Apple OR Google OR Microsoft OR "Startup" OR Crypto OR "Tech Trends")';
+
 export const dynamic = 'force-dynamic'; // Garante que a rota não seja cachead estáticamente
 
 export async function GET(req: NextRequest) {
   try {
-    // Verificação de segurança simples (opcional: verificar um token no header Authorization)
-    // if (req.headers.get('Authorization') !== `Bearer ${process.env.CRON_SECRET}`) { ... }
+    console.log('🔄 Iniciando Cron Job NovaPress (Modo Curadoria)...');
 
-    console.log('🔄 Iniciando Cron Job NovaPress...');
-
-    // 2. Buscar Notícias (Tecnologia/Business no Brasil)
-    const newsRes = await fetch(
-      `https://newsapi.org/v2/top-headlines?country=us&category=technology&apiKey=${process.env.NEWS_API_KEY}`
-    );
+    // 1. Busca Refinada (EUA, Tech, excluindo lixo, filtrando por keywords)
+    const apiUrl = `https://newsapi.org/v2/everything?q=${encodeURIComponent(KEYWORDS)}&language=en&sortBy=publishedAt&excludeDomains=${BLACKLIST_DOMAINS}&apiKey=${process.env.NEWS_API_KEY}`;
+    
+    const newsRes = await fetch(apiUrl);
     const newsData = await newsRes.json();
-
-    // --- INÍCIO DO DEBUG (ADICIONE ISSO) ---
-    console.log('📡 Status NewsAPI:', newsData.status);
-    console.log('📊 Total de Resultados:', newsData.totalResults);
-    console.log('articles array length:', newsData.articles ? newsData.articles.length : 0);
-    // --- FIM DO DEBUG ---
 
     if (newsData.status !== 'ok') throw new Error('Falha ao buscar NewsAPI');
 
-    // 3. Encontrar uma notícia inédita
     let targetArticle = null;
 
+    // 2. Loop de verificação (Tenta achar um artigo válido)
     for (const article of newsData.articles) {
-      if (!article.url || !article.title) continue;
+      // Filtros básicos de qualidade
+      if (!article.url || !article.title || !article.urlToImage) continue;
+      if (article.title.includes('[Removed]')) continue;
 
-      // Verifica se já existe no banco
       const { data: existing } = await supabase
         .from('posts')
         .select('id')
@@ -59,46 +54,59 @@ export async function GET(req: NextRequest) {
 
       if (!existing) {
         targetArticle = article;
-        break; // Achamos uma notícia nova! Parar o loop.
+        break; 
       }
     }
 
     if (!targetArticle) {
-      return NextResponse.json({ message: 'Nenhuma notícia nova encontrada.' }, { status: 200 });
+      return NextResponse.json({ message: 'Nenhuma notícia relevante nova encontrada.' }, { status: 200 });
     }
 
-    console.log(`📝 Processando: ${targetArticle.title}`);
+    console.log(`📝 Candidato selecionado: ${targetArticle.title}`);
 
-    // 4. Gerar Conteúdo com Gemini
+    // 3. Prompt com "Reviewer Mode"
+    // Instruímos o Gemini a recusar se for ruim.
     const prompt = `
-      Atue como um jornalista sênior de tecnologia do portal "NovaPress".
-      Escreva uma notícia completa baseada neste título e descrição:
-      Título: ${targetArticle.title}
-      Descrição: ${targetArticle.description || 'Sem descrição'}
-      Conteúdo Original (Snippet): ${targetArticle.content || ''}
-
-      Regras:
-      1. Escreva em Português do Brasil, tom profissional mas acessível.
-      2. O output deve ser APENAS código HTML (sem tag <html> ou <body>, apenas o conteúdo interno como <p>, <h2>, <ul>).
-      3. Use classes do Tailwind CSS para estilizar levemente (ex: <h2 class="text-2xl font-bold mt-4 mb-2">).
-      4. Crie um título chamativo dentro de uma tag <h1>.
-      5. Não invente fatos, baseie-se no input. Se for pouco, expanda explicando o contexto tecnológico.
+      Atue como Editor Chefe do "NovaPress". Analise esta notícia:
+      Título: "${targetArticle.title}"
+      Descrição: "${targetArticle.description}"
+      
+      PASSO 1 - ANÁLISE DE QUALIDADE:
+      O artigo parece ser apenas um Press Release de empresa, um anúncio de produto irrelevante ou spam? 
+      Se SIM, retorne apenas a palavra: "REJECT".
+      
+      PASSO 2 - ESCRITA (Se passar na qualidade):
+      Escreva uma notícia completa em HTML (sem tags html/body).
+      - Use Português do Brasil.
+      - Título <h1> impactante.
+      - Subtítulo (Lead) em itálico logo após o título.
+      - Use <h2> para separar seções.
+      - Estilo jornalístico sério e direto (New York Times style).
+      - Use classes Tailwind: <h1 class="text-3xl font-serif font-bold text-gray-900 mb-2">, <p class="text-gray-700 leading-relaxed mb-4">.
     `;
 
     const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const htmlContent = response.text().replace(/```html|```/g, ''); // Limpeza básica
+    const responseText = result.response.text();
 
-    // Gerar um resumo curto para o Twitter
-    const summaryPrompt = `Resuma a notícia "${targetArticle.title}" em uma frase instigante de até 200 caracteres para o Twitter. Sem hashtags.`;
-    const summaryResult = await model.generateContent(summaryPrompt);
-    const summaryText = summaryResult.response.text();
+    // Verificação de Rejeição da IA
+    if (responseText.includes('REJECT')) {
+      console.log('❌ Artigo rejeitado pela IA (Qualidade/Spam).');
+      // Opcional: Salvar URL numa tabela de 'blacklisted_urls' para não tentar de novo
+      return NextResponse.json({ message: 'Artigo rejeitado pela IA.' }, { status: 200 });
+    }
 
-    // 5. Salvar no Supabase
+    const htmlContent = responseText.replace(/```html|```/g, '');
+    
+    // Gera resumo para social
+    const summaryPrompt = `Crie um tweet curto (max 200 chars) e instigante sobre: ${targetArticle.title}. Sem hashtags, tom sério.`;
+    const summaryRes = await model.generateContent(summaryPrompt);
+    const summaryText = summaryRes.response.text();
+
+    // 4. Salvar
     const { data: savedPost, error: dbError } = await supabase
       .from('posts')
       .insert({
-        title: targetArticle.title,
+        title: targetArticle.title, // Pode usar o título da IA se preferir extrair do HTML
         content: htmlContent,
         summary: summaryText,
         original_url: targetArticle.url,
@@ -107,7 +115,7 @@ export async function GET(req: NextRequest) {
       .select()
       .single();
 
-    if (dbError) throw new Error(`Erro ao salvar no DB: ${dbError.message}`);
+    if (dbError) throw new Error(dbError.message);
 
     // 6. Postar no Twitter (Falha no Twitter não deve quebrar o processo todo, então usamos try/catch aninhado)
     let twitterStatus = 'skipped';
