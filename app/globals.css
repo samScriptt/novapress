@@ -1,21 +1,17 @@
 @import "tailwindcss";
 
-/* 👇 ADICIONE ESTA LINHA 👇 
-   Isso diz ao Tailwind v4 para ativar o modo escuro quando encontrar a classe .dark 
-*/
+/* 👇 O segredo para o Modo Escuro manual no Tailwind v4 👇 */
 @variant dark (&:where(.dark, .dark *));
 
 @theme {
-  /* Aqui conectamos as classes font-sans e font-serif às variáveis do Next.js */
   --font-sans: var(--font-inter);
   --font-serif: var(--font-playfair);
   
-  /* Cores personalizadas estilo Jornal */
   --color-stone-50: #fafaf9;
   --color-stone-900: #1c1917;
+  --color-stone-950: #0c0a09;
 }
 
-/* Estilos globais extras */
 body {
   font-family: var(--font-sans);
 }

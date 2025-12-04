@@ -114,13 +114,18 @@ export default async function PostPage({ params }: PageProps) {
         )}
 
         {/* Conteúdo Rico */}
-        <div 
-          className="prose prose-lg md:prose-xl max-w-none font-serif text-gray-800 dark:text-gray-300
-                     leading-relaxed
-                     prose-headings:font-bold prose-headings:text-black dark:prose-headings:text-white
-                     prose-a:text-blue-600 dark:prose-a:text-blue-400
-                     [&>h1]:mt-12 [&>h2]:mt-10 [&>p]:mb-6"
-          dangerouslySetInnerHTML={{ __html: post.content }} 
+        <div
+          className={
+            "prose prose-lg md:prose-xl max-w-none font-serif " +
+            "text-zinc-900 dark:text-zinc-100 dark:prose-invert " +
+            "leading-relaxed " +
+            // forçando via descendente (funciona mesmo se houver wrappers)
+            "[&_h1]:mt-12 [&_h1]:text-3xl [&_h1]:font-bold [&_h1]:text-black dark:[&_h1]:text-zinc-100 " +
+            "[&_h2]:mt-10 [&_h2]:text-2xl dark:[&_h2]:text-zinc-100 " +
+            "[&_p]:mb-6 [&_p]:text-lg dark:[&_p]:text-zinc-300 " +
+            "prose-a:text-blue-600 dark:prose-a:text-blue-400"
+          }
+          dangerouslySetInnerHTML={{ __html: post.content }}
         />
 
         {/* Componentes de Interação (Client Side) */}
