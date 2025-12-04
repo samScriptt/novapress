@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import Link from 'next/link';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -55,9 +56,11 @@ export default async function Home() {
             </div>
             <div className="lg:col-span-4 flex flex-col justify-center">
               <span className="bg-black text-white text-xs font-bold px-2 py-1 w-fit mb-4 uppercase">Manchete</span>
-              <h2 className="text-3xl md:text-4xl font-serif font-bold leading-tight mb-4 hover:underline cursor-pointer">
-                {heroPost.title}
-              </h2>
+              <Link href={`/post/${heroPost.id}`}>
+                <h2 className="text-3xl md:text-4xl font-serif font-bold leading-tight mb-4 hover:underline cursor-pointer">
+                  {heroPost.title}
+                </h2>
+              </Link>
               <p className="text-gray-600 mb-4 line-clamp-4 leading-relaxed">
                 {heroPost.summary}
               </p>
@@ -71,21 +74,23 @@ export default async function Home() {
         {/* Grid Secundário */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-12">
           {gridPosts.map((post) => (
-            <article key={post.id} className="group cursor-pointer">
-              <div className="aspect-[3/2] bg-gray-100 overflow-hidden mb-4">
-                {post.image_url ? (
-                  <img src={post.image_url} alt={post.title} className="w-full h-full object-cover group-hover:scale-105 transition duration-500" />
-                ) : <div className="w-full h-full flex items-center justify-center text-gray-300">Sem Imagem</div>}
-              </div>
-              <div className="border-l-2 border-black pl-4">
-                <h3 className="text-xl font-serif font-bold leading-snug mb-2 group-hover:text-blue-700">
-                  {post.title}
-                </h3>
-                <p className="text-sm text-gray-600 line-clamp-3 leading-relaxed">
-                  {post.summary}
-                </p>
-              </div>
-            </article>
+            <Link href={`/post/${post.id}`} key={post.id}>
+              <article key={post.id} className="group cursor-pointer">
+                <div className="aspect-[3/2] bg-gray-100 overflow-hidden mb-4">
+                  {post.image_url ? (
+                    <img src={post.image_url} alt={post.title} className="w-full h-full object-cover group-hover:scale-105 transition duration-500" />
+                  ) : <div className="w-full h-full flex items-center justify-center text-gray-300">Sem Imagem</div>}
+                </div>
+                <div className="border-l-2 border-black pl-4">
+                  <h3 className="text-xl font-serif font-bold leading-snug mb-2 group-hover:text-blue-700">
+                    {post.title}
+                  </h3>
+                  <p className="text-sm text-gray-600 line-clamp-3 leading-relaxed">
+                    {post.summary}
+                  </p>
+                </div>
+              </article>
+            </Link>
           ))}
         </div>
       </div>
