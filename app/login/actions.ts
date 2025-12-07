@@ -64,18 +64,22 @@ export async function signup(formData: FormData) {
 
   // 3. Cria o usuário no Auth
   // Passamos o username no 'data' para o Trigger do SQL pegar
-  const { error } = await supabase.auth.signUp({
+  const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
-      data: {
-        username: username, 
-      },
+      data: { username },
     },
   })
 
   if (error) {
-    return { error: `Erro no cadastro: ${error.message}` }
+    console.error("Erro Supabase Signup:", error) // Log no terminal do servidor
+    return { error: error.message }
+  }
+  
+  // Verificação extra: O usuário foi criado mesmo?
+  if (!data.user) {
+    return { error: "Erro desconhecido: Usuário não foi retornado pelo Supabase." }
   }
 
   // SUCESSO: Não precisamos criar o perfil manualmente aqui.
