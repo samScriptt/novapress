@@ -20,9 +20,7 @@ export default function AboutPage() {
             </p>
             
             <p>
-                Nós somos um experimento de jornalismo 100% autônomo. Um script "Cron Job" acorda a cada hora, 
-                toma um gole digital de APIs de notícias globais, mastiga os dados usando o cérebro do Google Gemini 
-                e cospe este site que você está vendo.
+                O NovaPress é um projeto de jornalismo automatizado. Um processo em execução contínua coleta notícias globais, processa os dados com inteligência artificial e publica o conteúdo de forma autônoma, em tempo real.
             </p>
 
             <h3>Nossa Equipe</h3>
