@@ -1,7 +1,16 @@
+"use client"; // 1. Transforma em Client Component para ler a URL
+
 import Link from "next/link";
+import { usePathname } from "next/navigation"; // 2. Hook para pegar a rota
 
 export function Footer() {
+  const pathname = usePathname();
   const currentYear = new Date().getFullYear();
+
+  // 3. Se estiver na página de login, não renderiza nada
+  if (pathname === "/login") {
+    return null;
+  }
 
   return (
     <footer className="bg-stone-100 dark:bg-stone-900 border-t border-stone-200 dark:border-stone-800 py-12 mt-auto">
@@ -35,14 +44,14 @@ export function Footer() {
           {/* Coluna 3: Legal */}
           <div>
             <h4 className="font-bold text-sm uppercase tracking-wider mb-4 text-stone-900 dark:text-stone-200">
-                Legal
+              Legal
             </h4>
             <ul className="space-y-2 text-sm text-stone-600 dark:text-stone-400">
-                <li><Link href="/legal/terms" className="hover:underline">Termos de Uso</Link></li>
-                <li><Link href="/legal/privacy" className="hover:underline">Privacidade</Link></li>
-                <li><Link href="/about" className="hover:underline">Sobre o Projeto</Link></li>
+              <li><Link href="/legal/terms" className="hover:underline">Termos de Uso</Link></li>
+              <li><Link href="/legal/privacy" className="hover:underline">Privacidade</Link></li>
+              <li><Link href="/about" className="hover:underline">Sobre o Projeto</Link></li>
             </ul>
-            </div>
+          </div>
         </div>
 
         <div className="border-t border-stone-200 dark:border-stone-800 pt-8 flex flex-col md:flex-row justify-between items-center text-xs text-stone-500">
