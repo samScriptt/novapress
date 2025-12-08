@@ -41,7 +41,7 @@ export function Header() {
   return (
     <header 
       className={cx(
-        "border-b-4 border-black dark:border-stone-100 bg-white dark:bg-stone-950 sticky top-0 z-30 transition-all duration-500 ease-in-out shadow-sm",
+        "dark:border-stone-100 bg-white dark:bg-stone-950 sticky top-0 z-30 transition-all duration-500 ease-in-out shadow-sm",
         isScrolled ? "py-3" : "py-8" 
       )}
     >
