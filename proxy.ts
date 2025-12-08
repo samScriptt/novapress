@@ -1,5 +1,5 @@
 import { type NextRequest } from 'next/server'
-import { updateSession } from '@/utils/supabase/session'
+import { updateSession } from '@/utils/supabase/session' // ou server-middleware, dependendo de como salvou
 
 export async function proxy(request: NextRequest) {
   return await updateSession(request)
@@ -7,13 +7,11 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    /*
-     * Aplica o middleware em todas as rotas, exceto:
-     * - _next/static (arquivos estáticos)
-     * - _next/image (otimização de imagens)
-     * - favicon.ico
-     * - imagens (svg, png, jpg, etc)
-     */
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    // PROTEGE APENAS: Rotas de API e Admin (se houver no futuro)
+    // LIBERA: Todo o resto (Home, Post, Category, etc)
+    '/api/auth/:path*',
+    '/painel/:path*', 
+    // O matcher antigo bloqueava tudo que não era estático. 
+    // Agora removemos a restrição global.
   ],
 }

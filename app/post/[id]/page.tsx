@@ -1,14 +1,15 @@
-import { createClient } from '@/utils/supabase/server'; // IMPORTANTE: Use o client de servidor
+import { createClient } from '@/utils/supabase/server';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { PostInteractions } from '@/components/PostInteractions';
-import { LikeDislike } from '@/components/LikeDislike'; // Novo
-import { Comments } from '@/components/Comments'; // Novo
+import { LikeDislike } from '@/components/LikeDislike';
+import { Comments } from '@/components/Comments';
 import { Clock } from 'lucide-react';
+import { ContentLock } from '@/components/ContentLock'; // Importe o componente
 
-export const revalidate = 0; // Importante para ver likes em tempo real
+export const revalidate = 0;
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -27,15 +28,11 @@ export default async function PostPage({ params }: PageProps) {
 
   if (!post) notFound();
 
-  // 2. Buscar Comentários (com dados do perfil)
-  const { data: comments } = await supabase
-    .from('comments')
-    .select('*, profiles(username)')
-    .eq('post_id', id)
-    .order('created_at', { ascending: false });
+  // 2. Verificar Usuário
+  const { data: { user } } = await supabase.auth.getUser();
+  const isLoggedIn = !!user;
 
-  // 3. Buscar Contagem de Likes/Dislikes
-  // (Fazemos duas queries rápidas count)
+  // 3. Buscar Interações (Só se estiver logado ou para exibir contadores)
   const { count: likeCount } = await supabase
     .from('likes')
     .select('*', { count: 'exact', head: true })
@@ -48,29 +45,31 @@ export default async function PostPage({ params }: PageProps) {
     .eq('post_id', id)
     .eq('vote_type', 'dislike');
 
-  // 4. Verificar Voto do Usuário Atual e Login
-  const { data: { user } } = await supabase.auth.getUser();
   let userVote = null;
+  let comments: any[] = [];
 
-  if (user) {
-    const { data: vote } = await supabase
-        .from('likes')
-        .select('vote_type')
-        .eq('post_id', id)
-        .eq('user_id', user.id)
-        .single();
+  // Busca dados completos apenas se estiver logado (opcional, ou busca sempre para mostrar quantidade)
+  if (isLoggedIn) {
+    const { data: vote } = await supabase.from('likes').select('vote_type').eq('post_id', id).eq('user_id', user.id).single();
     userVote = vote?.vote_type || null;
   }
-
-  // --- Renderização ---
   
+  // Sempre buscamos comentários para mostrar que existem, mas o componente Comments vai bloquear a escrita
+  const { data: commentsData } = await supabase
+    .from('comments')
+    .select('*, profiles(username)')
+    .eq('post_id', id)
+    .order('created_at', { ascending: false });
+  
+  comments = commentsData || [];
+
   const words = post.content.split(/\s+/).length;
   const readTime = Math.ceil(words / 200);
 
   return (
     <article className="min-h-screen bg-stone-50 text-stone-900 dark:bg-stone-950 dark:text-stone-100 selection:bg-black selection:text-white dark:selection:bg-white dark:selection:text-black transition-colors duration-500">
       
-      {/* Navbar (Simplificada para o post) */}
+      {/* Navbar */}
       <nav className="border-b border-gray-200 dark:border-stone-800 bg-white/80 dark:bg-stone-950/80 py-4 sticky top-0 z-20 backdrop-blur-md transition-all">
         <div className="container mx-auto px-4 max-w-4xl flex justify-between items-center">
           <Link href="/" className="font-serif font-black text-2xl tracking-tighter hover:text-blue-700 dark:hover:text-blue-400 transition">
@@ -99,7 +98,7 @@ export default async function PostPage({ params }: PageProps) {
           {post.title}
         </h1>
 
-        {/* Barra de Ações (Autor + Like) */}
+        {/* Barra de Ações */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 border-y border-gray-200 dark:border-stone-800 py-6 mb-12">
             <div className="flex items-center gap-4">
                 <div className="w-12 h-12 rounded-full bg-black dark:bg-white flex items-center justify-center text-white dark:text-black font-bold shadow-md">
@@ -111,13 +110,12 @@ export default async function PostPage({ params }: PageProps) {
                 </div>
             </div>
 
-            {/* Componente de Like/Dislike */}
             <LikeDislike 
                 postId={post.id} 
                 initialLikes={likeCount || 0} 
                 initialDislikes={dislikeCount || 0}
                 userVote={userVote}
-                isLoggedIn={!!user}
+                isLoggedIn={isLoggedIn}
             />
         </div>
 
@@ -130,25 +128,38 @@ export default async function PostPage({ params }: PageProps) {
           </figure>
         )}
 
-        {/* Texto */}
-        <div className="prose prose-lg md:prose-xl max-w-none font-serif text-gray-800 dark:text-gray-300 leading-relaxed prose-headings:font-bold prose-headings:text-black dark:prose-headings:text-white prose-a:text-blue-600 dark:prose-a:text-blue-400 [&>h1]:mt-12 [&>h2]:mt-10 [&>p]:mb-6"
-          dangerouslySetInnerHTML={{ __html: post.content }} 
-        />
-
-        {/* Botões de Share */}
-        <div className="mt-10 mb-16">
-            <h3 className="font-sans font-bold text-sm uppercase tracking-wide text-gray-500 mb-4">Compartilhar</h3>
-            <PostInteractions title={post.title} />
+        {/* ÁREA DE CONTEÚDO (COM LÓGICA DE BLUR) */}
+        <div className="relative">
+            <div 
+                className={`
+                    prose prose-lg md:prose-xl max-w-none font-serif text-gray-800 dark:text-gray-300 leading-relaxed
+                    prose-headings:font-bold prose-headings:text-black dark:prose-headings:text-white
+                    prose-a:text-blue-600 dark:prose-a:text-blue-400
+                    [&>h1]:mt-12 [&>h2]:mt-10 [&>p]:mb-6
+                    ${!isLoggedIn ? 'blur-sm select-none pointer-events-none max-h-96 overflow-hidden' : ''} 
+                `}
+                dangerouslySetInnerHTML={{ __html: post.content }} 
+            />
+            
+            {/* Overlay de Bloqueio se não estiver logado */}
+            {!isLoggedIn && <ContentLock />}
         </div>
 
-        <hr className="border-gray-300 dark:border-stone-800" />
+        {/* Botões de Share e Comentários (Só aparecem se desbloqueado ou parcialmente visíveis abaixo do fold) */}
+        <div className={!isLoggedIn ? 'opacity-30 pointer-events-none filter blur-sm mt-10' : 'mt-10'}>
+            <div className="mb-16">
+                <h3 className="font-sans font-bold text-sm uppercase tracking-wide text-gray-500 mb-4">Compartilhar</h3>
+                <PostInteractions title={post.title} />
+            </div>
 
-        {/* Seção de Comentários */}
-        <Comments 
-            postId={post.id} 
-            comments={comments || []} 
-            isLoggedIn={!!user}
-        />
+            <hr className="border-gray-300 dark:border-stone-800" />
+
+            <Comments 
+                postId={post.id} 
+                comments={comments} 
+                isLoggedIn={isLoggedIn}
+            />
+        </div>
 
       </div>
     </article>
