@@ -28,8 +28,20 @@ export default async function PostPage({ params }: PageProps) {
 
   if (!post) notFound();
 
-  // 2. Verificar Usuário
+  // 2. Verificar Usuário E Assinatura
   const { data: { user } } = await supabase.auth.getUser();
+  
+  let isSubscriber = false;
+  if (user) {
+    const { data: profile } = await supabase
+        .from('profiles')
+        .select('is_subscriber')
+        .eq('id', user.id)
+        .single();
+    isSubscriber = !!profile?.is_subscriber;
+  }
+
+  const hasAccess = isSubscriber; // Acesso só se pagar
   const isLoggedIn = !!user;
 
   // 3. Buscar Interações (Só se estiver logado ou para exibir contadores)
@@ -136,18 +148,18 @@ export default async function PostPage({ params }: PageProps) {
                     prose-headings:font-bold prose-headings:text-black dark:prose-headings:text-white
                     prose-a:text-blue-600 dark:prose-a:text-blue-400
                     [&>h1]:mt-12 [&>h2]:mt-10 [&>p]:mb-6
-                    ${!isLoggedIn ? 'blur-sm select-none pointer-events-none max-h-96 overflow-hidden' : ''} 
-                `}
+                    ${!hasAccess ? 'blur-md select-none pointer-events-none max-h-80 overflow-hidden' : ''}
+                    `}
                 dangerouslySetInnerHTML={{ __html: post.content }} 
             />
             
             {/* Overlay de Bloqueio se não estiver logado */}
-            {!isLoggedIn && <ContentLock />}
+            {!hasAccess && <ContentLock isLoggedIn={isLoggedIn} />}
         </div>
 
         {/* Botões de Share e Comentários (Só aparecem se desbloqueado ou parcialmente visíveis abaixo do fold) */}
-        <div className={!isLoggedIn ? 'opacity-30 pointer-events-none filter blur-sm mt-10' : 'mt-10'}>
-            <div className="mb-16">
+            <div className={!hasAccess ? 'hidden' : 'mt-10'}>
+              <div className="mb-16">
                 <h3 className="font-sans font-bold text-sm uppercase tracking-wide text-gray-500 mb-4">Compartilhar</h3>
                 <PostInteractions title={post.title} />
             </div>
