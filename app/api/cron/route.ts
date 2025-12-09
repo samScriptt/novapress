@@ -3,18 +3,17 @@ import { createClient } from '@supabase/supabase-js';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { TwitterApi } from 'twitter-api-v2';
 
-// Categorias permitidas (para o Prompt)
-const VALID_CATEGORIES = "Tech, Mundo, IA, Economia, Ciência";
-
-// Configurações (Mantenha suas chaves aqui)
+// Configurações (Mantenha suas chaves no .env.local)
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
+
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+// Mantendo o modelo solicitado (2.5 flash ou 2.0 flash conforme sua lib)
 const model = genAI.getGenerativeModel({ 
-  model: "gemini-2.5-flash",
-  generationConfig: { responseMimeType: "application/json" } // FORÇA JSON
+  model: "gemini-2.5-flash", // ou gemini-1.5-flash dependendo da disponibilidade
+  generationConfig: { responseMimeType: "application/json" }
 });
 
 const twitterClient = new TwitterApi({
@@ -26,24 +25,32 @@ const twitterClient = new TwitterApi({
 
 export const dynamic = 'force-dynamic';
 
+// Editorias dinâmicas para variar o conteúdo a cada execução
+const DYNAMIC_SECTIONS = ['technology', 'business', 'science', 'general'];
+
 export async function GET(req: NextRequest) {
   try {
-    console.log('🔄 Cron V2: Buscando e Classificando...');
+    // 1. Definição Dinâmica de Tópico
+    // Escolhe uma categoria aleatória para buscar tendências variadas
+    const currentSection = DYNAMIC_SECTIONS[Math.floor(Math.random() * DYNAMIC_SECTIONS.length)];
+    console.log(`🔄 NovaPress Cron: Scouting for trends in [${currentSection}]...`);
 
-    // Busca ampla para pegar variedade de tópicos
-    const keywords = '(Technology OR Economy OR "Artificial Intelligence" OR Science OR "World News")';
-    const apiUrl = `https://newsapi.org/v2/everything?q=${encodeURIComponent(keywords)}&language=en&sortBy=publishedAt&pageSize=20&apiKey=${process.env.NEWS_API_KEY}`;
+    // 2. Busca de Tendências Reais (Top Headlines US)
+    // Usamos 'us' para garantir conteúdo nativo em inglês e relevância global
+    const apiUrl = `https://newsapi.org/v2/top-headlines?country=us&category=${currentSection}&pageSize=20&apiKey=${process.env.NEWS_API_KEY}`;
     
     const newsRes = await fetch(apiUrl);
     const newsData = await newsRes.json();
     
-    if (newsData.status !== 'ok') throw new Error(`Erro NewsAPI: ${newsData.message}`);
+    if (newsData.status !== 'ok') throw new Error(`NewsAPI Error: ${newsData.message}`);
 
     let targetArticle = null;
 
-    // Tenta achar uma notícia inédita
+    // 3. Filtragem Inteligente
+    // Pula artigos removidos, sem imagem ou já existentes
     for (const article of newsData.articles) {
       if (!article.title || article.title === '[Removed]') continue;
+      if (!article.urlToImage) continue; // Exige imagem para qualidade visual
 
       const { data: existing } = await supabase
         .from('posts')
@@ -53,35 +60,47 @@ export async function GET(req: NextRequest) {
 
       if (!existing) {
         targetArticle = article;
-        break; 
+        break; // Pega o primeiro 'trending' válido que ainda não temos
       }
     }
 
-    if (!targetArticle) return NextResponse.json({ message: 'Nada novo.' });
+    if (!targetArticle) {
+      return NextResponse.json({ message: 'No new trending articles found in this cycle.' });
+    }
 
-    console.log(`📝 Processando: ${targetArticle.title}`);
+    console.log(`📝 Selected Trend: ${targetArticle.title}`);
 
-    // Prompt Engenharia para JSON
+    // 4. Prompt "Senior Writer" (Inglês + Long-form)
     const prompt = `
-      Atue como Editor Chefe do NovaPress. Analise esta notícia:
-      Título: "${targetArticle.title}"
-      Desc: "${targetArticle.description}"
-      Content: "${targetArticle.content}"
+      Role: You are the Editor-in-Chief of "NovaPress", a premium autonomous news portal.
+      Task: Write a comprehensive, long-form feature article in English based on this source.
 
-      TAREFA:
-      1. Classifique na categoria mais adequada entre: [${VALID_CATEGORIES}].
-      2. Gere 3 a 5 tags relevantes (ex: "Bitcoin", "NVIDIA", "Geopolítica").
-      3. Escreva a notícia em HTML (pt-BR, estilo jornalístico, use classes Tailwind).
-      4. Gere um resumo curto para o Twitter.
+      SOURCE DATA:
+      Title: "${targetArticle.title}"
+      Description: "${targetArticle.description}"
+      Content Snippet: "${targetArticle.content}"
+      Source Name: "${targetArticle.source.name}"
 
-      FORMATO DE RESPOSTA JSON OBRIGATÓRIO:
+      WRITING GUIDELINES:
+      1. Language: English (Professional, engaging, journalistic tone like The Verge or NYT).
+      2. Depth: Do not just summarize. Analyze the implications, provide context, and explain why this matters.
+      3. Structure:
+         - Engaging Headline (Catchy but accurate).
+         - Strong Lead Paragraph (Who, what, where, when, why).
+         - "The Big Picture" (Contextual analysis).
+         - "Why It Matters" (Impact on industry/society).
+      4. Formatting: Return ONLY the HTML body content (use <h2>, <p>, <ul>, <blockquote>). Use Tailwind classes for styling (e.g., <h2 class="text-2xl font-bold mt-8 mb-4">).
+      5. Tags: Generate 3-5 relevant hashtags/keywords.
+      6. Category: Assign one of: Tech, World, AI, Economy, Science.
+
+      REQUIRED JSON OUTPUT FORMAT:
       {
-        "valid": true, (ou false se for spam/inútil)
-        "category": "String (uma das categorias permitidas)",
-        "tags": ["tag1", "tag2"],
-        "title": "Título em PT-BR",
-        "html_content": "HTML string (apenas o body content, use h2, p, ul)",
-        "twitter_summary": "Resumo curto"
+        "valid": true,
+        "category": "String (Tech, World, AI, Economy, or Science)",
+        "tags": ["tag1", "tag2", "tag3"],
+        "title": "Your Enhanced Headline Here",
+        "html_content": "<p>Your long-form article content...</p>",
+        "twitter_summary": "A punchy, click-worthy summary for X (max 200 chars)"
       }
     `;
 
@@ -89,10 +108,10 @@ export async function GET(req: NextRequest) {
     const aiResponse = JSON.parse(result.response.text());
 
     if (!aiResponse.valid) {
-      return NextResponse.json({ message: 'IA Rejeitou a notícia.' });
+      return NextResponse.json({ message: 'AI rejected the article quality.' });
     }
 
-    // Salvar no Banco
+    // 5. Salvar no Banco
     const { data: savedPost, error } = await supabase
       .from('posts')
       .insert({
@@ -101,24 +120,28 @@ export async function GET(req: NextRequest) {
         summary: aiResponse.twitter_summary,
         original_url: targetArticle.url,
         image_url: targetArticle.urlToImage,
-        category: aiResponse.category, // Campo Novo
-        tags: aiResponse.tags          // Campo Novo
+        category: aiResponse.category,
+        tags: aiResponse.tags
       })
       .select()
       .single();
 
     if (error) throw error;
 
-    // Postar no Twitter (Opcional: descomente se quiser)
+    // 6. Postar no Twitter (Em Inglês)
     try {
         const link = `${process.env.SITE_URL || 'https://novapress.vercel.app'}/post/${savedPost.id}`;
-        await twitterClient.v2.tweet(`[${aiResponse.category}] ${aiResponse.twitter_summary}\n\n${link}`);
-    } catch(e) { console.log('Twitter fail', e); }
+        await twitterClient.v2.tweet(`${aiResponse.twitter_summary}\n\nRead more: ${link}\n\n#NovaPress #${aiResponse.category}`);
+    } catch(e) { console.log('Twitter fail (ignored)', e); }
 
-    return NextResponse.json({ success: true, category: aiResponse.category });
+    return NextResponse.json({ 
+      success: true, 
+      trend: currentSection,
+      title: aiResponse.title 
+    });
 
   } catch (error: any) {
-    console.error(error);
+    console.error("Cron Error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
