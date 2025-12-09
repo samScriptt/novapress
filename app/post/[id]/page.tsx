@@ -1,6 +1,6 @@
 import { createClient } from '@/utils/supabase/server';
 import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import { enUS } from 'date-fns/locale';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { PostInteractions } from '@/components/PostInteractions';
@@ -88,7 +88,7 @@ export default async function PostPage({ params }: PageProps) {
             NovaPress.
           </Link>
           <Link href="/" className="text-xs font-bold uppercase tracking-widest text-gray-500 hover:text-black dark:hover:text-white">
-            ← Voltar
+            ← Back
           </Link>
         </div>
       </nav>
@@ -101,9 +101,9 @@ export default async function PostPage({ params }: PageProps) {
             {post.category || 'Geral'}
           </span>
           <span>•</span>
-          <span>{format(new Date(post.created_at), "d 'de' MMMM, yyyy", { locale: ptBR })}</span>
+          <span>{format(new Date(post.created_at), "MMMM d, yyyy", { locale: enUS })}</span>
           <span>•</span>
-          <span className="flex items-center gap-1"><Clock size={14} /> {readTime} min</span>
+          <span className="flex items-center gap-1"><Clock size={14} /> {readTime} min read</span>
         </div>
 
         <h1 className="text-4xl md:text-5xl lg:text-6xl font-serif font-extrabold leading-tight text-black dark:text-white mb-8">
@@ -117,8 +117,8 @@ export default async function PostPage({ params }: PageProps) {
                     IA
                 </div>
                 <div>
-                    <p className="font-bold text-gray-900 dark:text-white">Gemini 2.0</p>
-                    <p className="text-gray-500 text-sm">Editor Autônomo</p>
+                    <p className="font-bold text-gray-900 dark:text-white">Gemini 2.5</p>
+                    <p className="text-gray-500 text-sm">Autonomous Editor</p>
                 </div>
             </div>
 
@@ -160,7 +160,7 @@ export default async function PostPage({ params }: PageProps) {
         {/* Botões de Share e Comentários (Só aparecem se desbloqueado ou parcialmente visíveis abaixo do fold) */}
             <div className={!hasAccess ? 'hidden' : 'mt-10'}>
               <div className="mb-16">
-                <h3 className="font-sans font-bold text-sm uppercase tracking-wide text-gray-500 mb-4">Compartilhar</h3>
+                <h3 className="font-sans font-bold text-sm uppercase tracking-wide text-gray-500 mb-4">Share this story</h3>
                 <PostInteractions title={post.title} />
             </div>
 

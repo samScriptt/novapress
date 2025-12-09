@@ -8,27 +8,27 @@ export default function PrivacyPage() {
           href="/"
           className="font-sans font-bold uppercase tracking-widest hover:underline text-xs mb-8 block"
         >
-          ← Voltar para Home
+          ← Back to Home
         </Link>
 
-        <h1 className="text-4xl font-black mb-8">Política de Privacidade</h1>
+        <h1 className="text-4xl font-black mb-8">Privacy Policy</h1>
 
         <div className="space-y-6">
           {/* TL;DR */}
           <div className="p-6 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-lg shadow-sm">
-            <h2 className="text-2xl font-bold mb-4">Resumo (TL;DR)</h2>
+            <h2 className="text-2xl font-bold mb-4">Summary (TL;DR)</h2>
             <p className="text-lg font-bold">
-              Coletamos apenas o mínimo necessário para o funcionamento do site,
-              com total respeito à sua privacidade.
+              We collect only the minimum necessary data for the site to work,
+              always respecting your privacy.
             </p>
           </div>
 
-          {/* Coleta de Dados */}
+          {/* Data Collection */}
           <section>
-            <h2 className="text-xl font-bold mb-2">Coleta de Dados</h2>
+            <h2 className="text-xl font-bold mb-2">Data Collection</h2>
             <p>
-              Os dados coletados são apenas os estritamente
-              necessários para o funcionamento desses recursos.
+              The data collected is strictly limited to what is necessary for
+              these features to function properly.
             </p>
           </section>
 
@@ -36,10 +36,9 @@ export default function PrivacyPage() {
           <section>
             <h2 className="text-xl font-bold mb-2">Cookies</h2>
             <p>
-              Utilizamos apenas cookies essenciais, como os responsáveis por
-              salvar suas preferências de visualização (modo claro ou escuro).
-              Não utilizamos cookies de rastreamento para fins publicitários ou
-              de monitoramento externo.
+              We only use essential cookies, such as those responsible for saving
+              your display preferences (light or dark mode).  
+              We do not use tracking cookies for advertising or external monitoring.
             </p>
           </section>
 
@@ -47,21 +46,20 @@ export default function PrivacyPage() {
           <section>
             <h2 className="text-xl font-bold mb-2">LGPD / GDPR</h2>
             <p>
-              O NovaPress segue os princípios da Lei Geral de Proteção de Dados
-              (LGPD) e do Regulamento Geral de Proteção de Dados (GDPR). Você pode
-              navegar com segurança, sabendo que seus dados não são vendidos,
-              repassados ou utilizados para fins abusivos.
+              NovaPress follows the principles of the Brazilian General Data
+              Protection Law (LGPD) and the General Data Protection Regulation (GDPR).  
+              You can browse safely, knowing that your data is never sold, shared,
+              or used for abusive purposes.
             </p>
           </section>
 
-          {/* Atualizações */}
+          {/* Updates */}
           <section>
-            <h2 className="text-xl font-bold mb-2">Atualizações desta Política</h2>
+            <h2 className="text-xl font-bold mb-2">Updates to This Policy</h2>
             <p>
-              Esta política pode ser atualizada conforme novas funcionalidades
-              forem adicionadas ao projeto, incluindo sistemas de login,
-              comentários ou personalização de conteúdo. Sempre que houver
-              mudanças importantes, esta página será atualizada.
+              This policy may be updated as new features are added to the project,
+              including login systems, comments, or content personalization.  
+              Whenever there are major changes, this page will be updated.
             </p>
           </section>
         </div>

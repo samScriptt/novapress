@@ -22,7 +22,7 @@ export function SearchBar() {
     <form onSubmit={handleSearch} className="relative w-full max-w-xs md:max-w-sm">
       <input
         type="text"
-        placeholder="Buscar notícias..."
+        placeholder="Search news..."
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         className="w-full pl-10 pr-4 py-2 text-sm bg-gray-100 dark:bg-stone-800 border-none rounded-full focus:ring-2 focus:ring-blue-500 outline-none transition-all"

@@ -53,10 +53,10 @@ export default function LoginPage() {
         {/* Frase de Efeito (Estilo Depoimento/Manifesto) */}
         <div className="relative z-10 max-w-lg">
             <blockquote className="text-3xl font-serif leading-tight mb-6">
-                "A informação não dorme. O jornalismo do futuro é autônomo, curado por IA e entregue em tempo real."
+                "Information never sleeps. The journalism of the future is autonomous, curated by AI, and delivered in real time."
             </blockquote>
             <div className="flex gap-6 text-stone-400 text-xs font-bold font-sans uppercase tracking-widest">
-                <div className="flex items-center gap-2"><Newspaper size={16} /> Curadoria 24/7</div>
+                <div className="flex items-center gap-2"><Newspaper size={16} /> Curation 24/7</div>
                 <div className="flex items-center gap-2"><Cpu size={16} /> Powered by Gemini</div>
             </div>
         </div>
@@ -79,10 +79,10 @@ export default function LoginPage() {
             
             <div className="text-center lg:text-left space-y-2">
                 <h2 className="text-4xl font-black font-serif tracking-tight">
-                    {isLogin ? 'Bem-vindo de volta.' : 'Crie sua conta.'}
+                    {isLogin ? 'Welcome back' : 'Create your account'}
                 </h2>
                 <p className="text-stone-500 text-sm font-sans">
-                    {isLogin ? 'Digite suas credenciais para acessar o painel.' : 'Junte-se à nossa comunidade de leitores.'}
+                    {isLogin ? 'Enter your credentials to access' : 'Join to us.'}
                 </p>
             </div>
 
@@ -113,7 +113,7 @@ export default function LoginPage() {
 
                 <div className="space-y-1.5">
                     <div className="flex justify-between items-center ml-1">
-                        <label className="text-xs font-bold uppercase tracking-wide text-stone-500">Senha</label>
+                        <label className="text-xs font-bold uppercase tracking-wide text-stone-500">Password</label>
                     </div>
                     <input 
                         name="password" 
@@ -138,7 +138,7 @@ export default function LoginPage() {
                     className="w-full bg-black dark:bg-white text-white dark:text-black font-bold py-4 rounded-lg hover:opacity-90 hover:-translate-y-0.5 active:translate-y-0 transition-all shadow-xl shadow-stone-200 dark:shadow-none flex justify-center items-center gap-2"
                 >
                     {loading && <Loader2 className="animate-spin" size={20} />}
-                    {isLogin ? 'Entrar na Plataforma' : 'Criar Conta Gratuita'}
+                    {isLogin ? 'Log in' : 'Create a Free Account'}
                 </button>
             </form>
 
@@ -148,17 +148,17 @@ export default function LoginPage() {
                         <span className="w-full border-t border-stone-200 dark:border-stone-800" />
                     </div>
                     <div className="relative flex justify-center text-xs uppercase tracking-widest">
-                        <span className="bg-stone-50 dark:bg-stone-950 px-4 text-stone-400">Opções</span>
+                        <span className="bg-stone-50 dark:bg-stone-950 px-4 text-stone-400">Options</span>
                     </div>
                 </div>
 
                 <p className="text-sm text-stone-600 dark:text-stone-400">
-                    {isLogin ? 'Ainda não é assinante?' : 'Já possui cadastro?'}
+                    {isLogin ? 'Not a subscriber yet?' : 'Are you already registered?'}
                     <button 
                         onClick={() => { setIsLogin(!isLogin); setMsg(''); }}
                         className="ml-2 font-bold text-black dark:text-white hover:underline underline-offset-4 decoration-2"
                     >
-                        {isLogin ? 'Cadastre-se' : 'Fazer Login'}
+                        {isLogin ? 'Register' : 'Login'}
                     </button>
                 </p>
             </div>

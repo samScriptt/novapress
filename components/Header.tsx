@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import { enUS } from 'date-fns/locale';
 import { useState, useEffect } from 'react';
 import { SearchBar } from '@/components/SearchBar';
 import { ThemeToggle } from '@/components/ThemeToggle';
@@ -79,7 +79,7 @@ export function Header() {
                           onClick={() => logout()} 
                           className="flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded w-full text-left"
                       >
-                          <LogOut size={14} /> Sair
+                          <LogOut size={14} /> Exit
                       </button>
                   </div>
                 )}
@@ -109,7 +109,7 @@ export function Header() {
               {/* Data */}
               <div className="hidden md:block absolute left-0 top-1/2 -translate-y-1/2">
                   <div className="text-xs font-bold tracking-widest uppercase text-gray-500">
-                    {format(new Date(), "EEEE, d 'de' MMMM", { locale: ptBR })}
+                    {format(new Date(), "EEEE, MMMM d, yyyy", { locale: enUS })}
                   </div>
               </div>
 
@@ -130,11 +130,12 @@ export function Header() {
 
           {/* Navegação */}
           <nav className="flex flex-wrap justify-center gap-6 text-sm font-bold uppercase border-t border-gray-100 dark:border-stone-800 text-gray-900 dark:text-gray-300 mt-6 pt-6">
-              <Link href="/" className="hover:text-blue-600 dark:hover:text-blue-400">Home</Link>
-              <Link href="/category/tech" className="hover:text-blue-600 dark:hover:text-blue-400">Tech</Link>
-              <Link href="/category/mundo" className="hover:text-blue-600 dark:hover:text-blue-400">Mundo</Link>
-              <Link href="/category/ia" className="hover:text-blue-600 dark:hover:text-blue-400">IA</Link>
-              <Link href="/category/economia" className="hover:text-blue-600 dark:hover:text-blue-400">Economia</Link>
+            <Link href="/" className="...">Home</Link>
+            <Link href="/category/technology" className="...">Tech</Link>
+            <Link href="/category/world" className="...">World</Link>
+            <Link href="/category/ai" className="...">AI</Link>
+            <Link href="/category/business" className="...">Business</Link>
+            <Link href="/category/science" className="...">Science</Link>
           </nav>
         </div>
       </header>
@@ -162,6 +163,6 @@ export function Header() {
             <UserControls isFloating={true} menuId="floating" />
         </div>
       </div>
-    </>
+    </> 
   );
 }

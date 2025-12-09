@@ -23,8 +23,8 @@ export function Footer() {
               NovaPress.
             </h3>
             <p className="text-stone-500 text-sm leading-relaxed max-w-xs">
-              Jornalismo autônomo impulsionado por inteligência artificial. 
-              Curadoria em tempo real das notícias que moldam o futuro.
+              Autonomous journalism powered by artificial intelligence. 
+              Real-time curation of stories that shape the future.
             </p>
           </div>
 
@@ -34,10 +34,10 @@ export function Footer() {
               Seções
             </h4>
             <ul className="space-y-2 text-sm text-stone-600 dark:text-stone-400">
-              <li><Link href="/category/tech" className="hover:text-blue-600 transition">Tecnologia</Link></li>
-              <li><Link href="/category/mundo" className="hover:text-blue-600 transition">Mundo</Link></li>
-              <li><Link href="/category/ia" className="hover:text-blue-600 transition">Inteligência Artificial</Link></li>
-              <li><Link href="/category/economia" className="hover:text-blue-600 transition">Economia</Link></li>
+              <li><Link href="/category/technology">Technology</Link></li>
+              <li><Link href="/category/world">World</Link></li>
+              <li><Link href="/category/ai">Artificial Intelligence</Link></li>
+              <li><Link href="/category/business">Business</Link></li>
             </ul>
           </div>
 
@@ -47,16 +47,16 @@ export function Footer() {
               Legal
             </h4>
             <ul className="space-y-2 text-sm text-stone-600 dark:text-stone-400">
-              <li><Link href="/legal/terms" className="hover:underline">Termos de Uso</Link></li>
-              <li><Link href="/legal/privacy" className="hover:underline">Privacidade</Link></li>
-              <li><Link href="/about" className="hover:underline">Sobre o Projeto</Link></li>
+              <li><Link href="/legal/terms">Terms of Service</Link></li>
+              <li><Link href="/legal/privacy">Privacy Policy</Link></li>
+              <li><Link href="/about">About Us</Link></li>
             </ul>
           </div>
         </div>
 
         <div className="border-t border-stone-200 dark:border-stone-800 pt-8 flex flex-col md:flex-row justify-between items-center text-xs text-stone-500">
-          <p>&copy; {currentYear} NovaPress AI. Todos os direitos reservados.</p>
-          <p className="mt-2 md:mt-0">Desenvolvido com Next.js 16 & Gemini 2.0</p>
+          <p>&copy; {new Date().getFullYear()} NovaPress AI. All rights reserved.</p>
+          <p>Powered by Next.js 16 & Gemini 2.0</p>
         </div>
       </div>
     </footer>

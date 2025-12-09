@@ -23,7 +23,7 @@ export function ContentLock({ isLoggedIn }: { isLoggedIn: boolean }) {
         window.location.href = data.url; // Redireciona para o Stripe
       }
     } catch (error) {
-      alert("Erro ao iniciar pagamento.");
+      alert("Error when starting payment.");
     } finally {
       setLoading(false);
     }
@@ -36,15 +36,15 @@ export function ContentLock({ isLoggedIn }: { isLoggedIn: boolean }) {
           <Lock size={20} />
         </div>
         <h3 className="text-2xl font-serif font-black mb-2 text-stone-900 dark:text-white">
-          Acesso Exclusivo
+          Exclusive Access
         </h3>
         <p className="text-stone-500 mb-6 font-sans text-sm">
-          Jornalismo independente custa caro. Apoie o NovaPress e tenha acesso ilimitado a todas as notícias.
+            Independent journalism is expensive. Support NovaPress and get unlimited access to all the news.
         </p>
         
         <div className="mb-6 flex justify-center items-baseline gap-1">
             <span className="text-3xl font-black text-black dark:text-white">$1</span>
-            <span className="text-stone-500">/mês</span>
+            <span className="text-stone-500">/month</span>
         </div>
 
         <button 
@@ -52,16 +52,16 @@ export function ContentLock({ isLoggedIn }: { isLoggedIn: boolean }) {
           disabled={loading}
           className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition-colors flex items-center justify-center gap-2"
         >
-          {loading ? "Processando..." : (
+          {loading ? "Processing..." : (
             <>
                 <CreditCard size={18} />
-                {isLoggedIn ? "Assinar Agora" : "Entrar para Assinar"}
+                {isLoggedIn ? "Sign Up Now" : "Log In to Sign Up"}
             </>
           )}
         </button>
         
         <p className="mt-4 text-xs text-stone-400">
-          Cancele quando quiser. Pagamento seguro via Stripe.
+            Cancel anytime. Secure payment via Stripe.
         </p>
       </div>
     </div>

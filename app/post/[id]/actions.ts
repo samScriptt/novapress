@@ -8,13 +8,13 @@ export async function addComment(formData: FormData) {
   const content = formData.get('content') as string;
   const postId = formData.get('postId') as string;
 
-  // 1. Verifica Usuário
+  // 1. Check user
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { error: 'Você precisa estar logado para comentar.' };
+  if (!user) return { error: 'You must be logged in to comment.' };
 
-  if (!content.trim()) return { error: 'Comentário vazio.' };
+  if (!content.trim()) return { error: 'Empty comment.' };
 
-  // 2. Insere Comentário
+  // 2. Insert comment
   const { error } = await supabase.from('comments').insert({
     content,
     post_id: postId,
@@ -31,9 +31,9 @@ export async function toggleVote(postId: string, type: 'like' | 'dislike') {
   const supabase = await createClient();
   
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { error: 'Login necessário' }; // Trataremos no front redirecionando
+  if (!user) return { error: 'Login required' }; // Handled on frontend with redirect
 
-  // Verifica se já votou
+  // Check if user already voted
   const { data: existingVote } = await supabase
     .from('likes')
     .select('vote_type')
@@ -43,14 +43,14 @@ export async function toggleVote(postId: string, type: 'like' | 'dislike') {
 
   if (existingVote) {
     if (existingVote.vote_type === type) {
-      // Se clicou no mesmo, remove (toggle off)
+      // If clicked the same vote, remove (toggle off)
       await supabase.from('likes').delete().eq('post_id', postId).eq('user_id', user.id);
     } else {
-      // Se mudou (like -> dislike), atualiza
+      // If changed (like -> dislike), update
       await supabase.from('likes').update({ vote_type: type }).eq('post_id', postId).eq('user_id', user.id);
     }
   } else {
-    // Novo voto
+    // New vote
     await supabase.from('likes').insert({
       post_id: postId,
       user_id: user.id,

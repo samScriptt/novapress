@@ -2,6 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 import Link from 'next/link';
 import { Header } from '@/components/Header'; // Usando o novo Header animado
 import { ArrowLeft, ArrowRight } from 'lucide-react';
+import { enUS } from 'date-fns/locale'; // Use enUS
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -59,7 +60,7 @@ export default async function Home({ searchParams }: HomeProps) {
         {/* Aviso de Busca */}
         {searchQuery && (
              <div className="mb-8 p-4 bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500">
-                <h2 className="text-xl font-serif font-bold">Resultados para: "{searchQuery}"</h2>
+                <h2 className="text-xl font-serif font-bold">Results for: "{searchQuery}"</h2>
              </div>
         )}
 
@@ -79,7 +80,7 @@ export default async function Home({ searchParams }: HomeProps) {
               </div>
             </div>
             <div className="lg:col-span-4 flex flex-col justify-center">
-              <span className="bg-black dark:bg-white text-white dark:text-black text-xs font-bold px-2 py-1 w-fit mb-4 uppercase">Manchete</span>
+              <span className="bg-black dark:bg-white text-white dark:text-black text-xs font-bold px-2 py-1 w-fit mb-4 uppercase">Headline</span>
               <Link href={`/post/${heroPost.id}`}>
                 <h2 className="text-3xl md:text-4xl font-serif font-bold leading-tight mb-4 hover:underline decoration-2 underline-offset-4 text-black dark:text-white cursor-pointer">
                   {heroPost.title}
@@ -100,7 +101,7 @@ export default async function Home({ searchParams }: HomeProps) {
                 <div className="aspect-[3/2] bg-gray-100 dark:bg-stone-800 overflow-hidden mb-4 rounded-sm relative">
                   {post.image_url ? (
                     <img src={post.image_url} alt={post.title} className="w-full h-full object-cover group-hover:scale-105 transition duration-500" />
-                  ) : <div className="w-full h-full flex items-center justify-center text-gray-300">Sem Imagem</div>}
+                  ) : <div className="w-full h-full flex items-center justify-center text-gray-300">No Image</div>}
                    <span className="absolute bottom-2 left-2 bg-black/70 backdrop-blur-sm text-white text-[10px] font-bold px-2 py-1 uppercase">
                         {post.category || 'News'}
                     </span>
@@ -119,7 +120,7 @@ export default async function Home({ searchParams }: HomeProps) {
         </div>
         
         {(!posts || posts.length === 0) && (
-            <div className="text-center py-20 opacity-50 font-serif">Nenhuma notícia encontrada nesta página.</div>
+            <div className="text-center py-20 opacity-50 font-serif">No news found on this page.</div>
         )}
 
         {/* Controles de Paginação */}
@@ -130,13 +131,13 @@ export default async function Home({ searchParams }: HomeProps) {
                         href={`/?page=${currentPage - 1}${searchQuery ? `&q=${searchQuery}` : ''}`}
                         className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-stone-900 border border-gray-300 dark:border-stone-700 rounded hover:bg-gray-100 dark:hover:bg-stone-800 transition font-bold text-sm"
                     >
-                        <ArrowLeft size={16} /> Anterior
+                        <ArrowLeft size={16} /> Previous
                     </Link>
                 ) : <div />}
             </div>
 
             <span className="text-sm font-serif text-gray-500">
-                Página {currentPage} de {totalPages}
+                Page {currentPage} of {totalPages}
             </span>
 
             <div>
@@ -145,7 +146,7 @@ export default async function Home({ searchParams }: HomeProps) {
                         href={`/?page=${currentPage + 1}${searchQuery ? `&q=${searchQuery}` : ''}`}
                         className="flex items-center gap-2 px-4 py-2 bg-black text-white dark:bg-white dark:text-black rounded hover:opacity-80 transition font-bold text-sm"
                     >
-                        Próxima <ArrowRight size={16} />
+                        Next <ArrowRight size={16} />
                     </Link>
                 ) : <div />}
             </div>

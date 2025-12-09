@@ -9,7 +9,7 @@ interface Props {
   postId: string;
   initialLikes: number;
   initialDislikes: number;
-  userVote: 'like' | 'dislike' | null; // O que o usuário atual votou
+  userVote: 'like' | 'dislike' | null; // What the current user voted
   isLoggedIn: boolean;
 }
 
@@ -19,7 +19,7 @@ export function LikeDislike({ postId, initialLikes, initialDislikes, userVote, i
 
   const handleVote = (type: 'like' | 'dislike') => {
     if (!isLoggedIn) {
-      if (confirm("Você precisa estar logado para votar. Ir para login?")) {
+      if (confirm("You must be logged in to vote. Go to login?")) {
         router.push("/login");
       }
       return;

@@ -37,19 +37,19 @@ export function Comments({ postId, comments, isLoggedIn }: Props) {
 
   return (
     <div className="mt-12">
-      <h3 className="text-2xl font-serif font-black mb-6">Comentários ({comments.length})</h3>
+      <h3 className="text-2xl font-serif font-black mb-6">Comments ({comments.length})</h3>
 
       {/* Formulário */}
       {isLoggedIn ? (
         <form action={handleSubmit} ref={formRef} className="mb-10 flex gap-4 items-start">
           <div className="w-10 h-10 rounded-full bg-black dark:bg-white flex-shrink-0 flex items-center justify-center text-white dark:text-black font-bold text-xs">
-             EU
+             ME
           </div>
           <div className="flex-grow relative">
             <input type="hidden" name="postId" value={postId} />
             <textarea 
               name="content"
-              placeholder="Participe da discussão..."
+              placeholder="Participate in the discussion..."
               className="w-full p-4 pr-12 rounded-xl bg-stone-100 dark:bg-stone-900 border border-stone-200 dark:border-stone-800 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none h-28 text-sm disabled:opacity-50"
               required
               disabled={isPending} // Desabilita enquanto envia
@@ -58,7 +58,7 @@ export function Comments({ postId, comments, isLoggedIn }: Props) {
               type="submit" 
               disabled={isPending}
               className="absolute bottom-3 right-3 bg-blue-600 text-white p-2 rounded-full hover:bg-blue-700 transition disabled:bg-stone-400"
-              title="Enviar Comentário"
+              title="Send Comment"
             >
               {isPending ? (
                 <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -70,9 +70,9 @@ export function Comments({ postId, comments, isLoggedIn }: Props) {
         </form>
       ) : (
         <div className="bg-stone-100 dark:bg-stone-900 p-8 rounded-xl text-center mb-10 border border-dashed border-stone-300 dark:border-stone-800">
-          <p className="text-stone-500 mb-4 font-serif italic">Quer deixar sua opinião?</p>
+          <p className="text-stone-500 mb-4 font-serif italic">Would you like to share your opinion?</p>
           <Link href="/login" className="inline-block bg-black dark:bg-white text-white dark:text-black px-6 py-2 rounded-full font-bold text-sm hover:opacity-80 transition">
-            Faça Login para Comentar
+            Log in to comment
           </Link>
         </div>
       )}
@@ -88,7 +88,7 @@ export function Comments({ postId, comments, isLoggedIn }: Props) {
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
                     <span className="font-bold text-sm text-stone-900 dark:text-stone-100">
-                    @{comment.profiles?.username || 'Anônimo'}
+                    @{comment.profiles?.username || 'Anonymous'}
                     </span>
                     <span className="text-[10px] text-stone-400 bg-stone-100 dark:bg-stone-800 px-2 py-0.5 rounded-full">
                     {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true, locale: ptBR })}
@@ -104,7 +104,7 @@ export function Comments({ postId, comments, isLoggedIn }: Props) {
         
         {comments.length === 0 && (
             <div className="text-center py-10 opacity-50">
-                <p className="font-serif italic text-stone-400">Nenhum comentário ainda. Seja o primeiro!</p>
+                <p className="font-serif italic text-stone-400">No comments yet. Be the first!</p>
             </div>
         )}
       </div>

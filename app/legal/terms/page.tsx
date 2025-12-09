@@ -4,29 +4,48 @@ export default function TermsPage() {
   return (
     <main className="min-h-screen bg-stone-50 dark:bg-stone-950 text-stone-900 dark:text-stone-100 p-4 md:p-12">
       <div className="max-w-2xl mx-auto font-serif">
-        <Link href="/" className="font-sans font-bold uppercase tracking-widest hover:underline text-xs mb-8 block">← Voltar para Home</Link>
+        <Link
+          href="/"
+          className="font-sans font-bold uppercase tracking-widest hover:underline text-xs mb-8 block"
+        >
+          ← Back to Home
+        </Link>
         
-        <h1 className="text-4xl font-black mb-8">Termos de Uso (Sério, mas nem tanto)</h1>
+        <h1 className="text-4xl font-black mb-8">Terms of Use (Serious, but not too much)</h1>
 
         <div className="space-y-6">
             <section>
-                <h2 className="text-xl font-bold mb-2">1. Aceitação</h2>
-                <p>Ao acessar o NovaPress, você concorda que está lendo notícias escritas por um robô. Se ele alucinar e disser que capivaras voam, use o bom senso.</p>
+                <h2 className="text-xl font-bold mb-2">1. Acceptance</h2>
+                <p>
+                    By accessing NovaPress, you agree that you’re reading news written by a robot.  
+                    If it hallucinates and tells you that capybaras can fly, please use common sense.
+                </p>
             </section>
 
             <section>
-                <h2 className="text-xl font-bold mb-2">2. Precisão dos Fatos</h2>
-                <p>Nossa IA se esforça, mas às vezes ela bebe óleo demais. Não use nossas notícias como base para investimentos financeiros, cirurgias cardíacas ou apostas em corrida de cavalo.</p>
+                <h2 className="text-xl font-bold mb-2">2. Accuracy of Information</h2>
+                <p>
+                    Our AI tries its best, but sometimes it drinks too much oil.  
+                    Do not use our news as a basis for financial investments, heart surgeries,  
+                    or betting on horse races.
+                </p>
             </section>
 
             <section>
-                <h2 className="text-xl font-bold mb-2">3. Direitos Autorais</h2>
-                <p>As notícias originais pertencem às suas fontes. Nós apenas resumimos e curamos. Se você é dono de uma fonte e está bravo, mande um email que nosso robô lerá (talvez).</p>
+                <h2 className="text-xl font-bold mb-2">3. Copyright</h2>
+                <p>
+                    Original news articles belong to their respective sources.  
+                    We only summarize and curate.  
+                    If you own a source and you're upset, send us an email and our robot will read it (maybe).
+                </p>
             </section>
             
             <section>
-                <h2 className="text-xl font-bold mb-2">4. Garantias</h2>
-                <p>Garantimos que este site foi feito com muito café e poucas horas de sono. Nenhuma outra garantia é oferecida.</p>
+                <h2 className="text-xl font-bold mb-2">4. Warranties</h2>
+                <p>
+                    We guarantee that this site was built with a lot of coffee and very few hours of sleep.  
+                    No other warranties are provided.
+                </p>
             </section>
         </div>
       </div>

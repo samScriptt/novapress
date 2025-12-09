@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { SearchBar } from '@/components/SearchBar';
 import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import { enUS } from 'date-fns/locale';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -28,7 +28,7 @@ export default async function CategoryPage({ params }: CategoryProps) {
     .ilike('category', slug) // Busca flexível (Tech = tech)
     .order('created_at', { ascending: false });
 
-  if (!posts) return <div>Carregando...</div>;
+  if (!posts) return <div>Loading...</div>;
 
   const categoryTitle = slug.charAt(0).toUpperCase() + slug.slice(1);
 
@@ -50,13 +50,13 @@ export default async function CategoryPage({ params }: CategoryProps) {
 
       <div className="container mx-auto px-4 py-12">
         <h1 className="text-6xl font-serif font-black mb-12 border-b-4 border-blue-600 w-fit pb-2 uppercase text-black dark:text-white">
-            {slug === 'ia' ? 'Inteligência Artificial' : categoryTitle}
+            {slug === 'ia' ? 'Artificial intelligence' : categoryTitle}
         </h1>
 
         {posts.length === 0 ? (
             <div className="py-20 text-center">
-                <p className="text-2xl font-serif text-gray-400">Ainda não há notícias nesta seção.</p>
-                <Link href="/" className="text-blue-600 underline mt-4 block">Voltar para Home</Link>
+                <p className="text-2xl font-serif text-gray-400">There is no news in this section yet.</p>
+                <Link href="/" className="text-blue-600 underline mt-4 block">Back to home</Link>
             </div>
         ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">

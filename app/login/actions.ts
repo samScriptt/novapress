@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/utils/supabase/server'
 
-// Validação de senha forte
+// Strong password validation
 function validatePassword(password: string): string | null {
   const minLength = 8;
   const hasUpperCase = /[A-Z]/.test(password);
@@ -12,13 +12,13 @@ function validatePassword(password: string): string | null {
   const hasNumbers = /\d/.test(password);
   const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
 
-  if (password.length < minLength) return "A senha deve ter pelo menos 8 caracteres.";
-  if (!hasUpperCase) return "A senha deve conter pelo menos uma letra maiúscula.";
-  if (!hasLowerCase) return "A senha deve conter pelo menos uma letra minúscula.";
-  if (!hasNumbers) return "A senha deve conter pelo menos um número.";
-  if (!hasSpecialChar) return "A senha deve conter pelo menos um caractere especial (!@#$...).";
+  if (password.length < minLength) return "Password must be at least 8 characters long.";
+  if (!hasUpperCase) return "Password must contain at least one uppercase letter.";
+  if (!hasLowerCase) return "Password must contain at least one lowercase letter.";
+  if (!hasNumbers) return "Password must contain at least one number.";
+  if (!hasSpecialChar) return "Password must contain at least one special character (!@#$...).";
 
-  return null; // Senha válida
+  return null; // Valid password
 }
 
 export async function login(formData: FormData) {
@@ -33,9 +33,9 @@ export async function login(formData: FormData) {
   })
 
   if (error) {
-    // Traduzindo erros comuns do Supabase
+    // Translating common Supabase errors
     if (error.message.includes("Invalid login")) {
-        return { error: 'E-mail ou senha incorretos.' }
+        return { error: 'Incorrect email or password.' }
     }
     return { error: error.message }
   }
@@ -51,19 +51,19 @@ export async function signup(formData: FormData) {
   const password = formData.get('password') as string
   const username = formData.get('username') as string
 
-  // 1. Validação de Username
+  // 1. Username Validation
   if (!username || username.length < 3) {
-    return { error: 'O nome de usuário deve ter no mínimo 3 caracteres.' }
+    return { error: 'Username must be at least 3 characters long.' }
   }
 
-  // 2. Validação de Senha Forte
+  // 2. Strong Password Validation
   const passwordError = validatePassword(password);
   if (passwordError) {
     return { error: passwordError }
   }
 
-  // 3. Cria o usuário no Auth
-  // Passamos o username no 'data' para o Trigger do SQL pegar
+  // 3. Create user in Auth
+  // We pass the username in 'data' for the SQL Trigger to capture
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
@@ -73,17 +73,17 @@ export async function signup(formData: FormData) {
   })
 
   if (error) {
-    console.error("Erro Supabase Signup:", error) // Log no terminal do servidor
+    console.error("Supabase Signup Error:", error) // Logged on the server terminal
     return { error: error.message }
   }
   
-  // Verificação extra: O usuário foi criado mesmo?
+  // Extra check: Was the user actually created?
   if (!data.user) {
-    return { error: "Erro desconhecido: Usuário não foi retornado pelo Supabase." }
+    return { error: "Unknown error: User was not returned by Supabase." }
   }
 
-  // SUCESSO: Não precisamos criar o perfil manualmente aqui.
-  // O Trigger 'on_auth_user_created' no banco fará isso automaticamente e sem erros de RLS.
+  // SUCCESS: We don't need to manually create the profile here.
+  // The 'on_auth_user_created' trigger in the database will handle this automatically.
 
   revalidatePath('/', 'layout')
   redirect('/')
