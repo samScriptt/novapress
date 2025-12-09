@@ -1,12 +1,12 @@
 "use client";
 
 import { addComment } from "@/app/post/[id]/actions";
-import { User, SendHorizontal } from "lucide-react";
+import { User, SendHorizontal, Lock } from "lucide-react"; // Adicionado Lock
 import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { ptBR, enUS } from "date-fns/locale";
 import { useRef, useTransition } from "react";
-import { useRouter } from "next/navigation"; // 1. Importar useRouter
+import { useRouter } from "next/navigation";
 
 interface Comment {
   id: string;
@@ -19,19 +19,19 @@ interface Props {
   postId: string;
   comments: Comment[];
   isLoggedIn: boolean;
+  isSubscriber: boolean; // Novo prop
 }
 
-export function Comments({ postId, comments, isLoggedIn }: Props) {
+export function Comments({ postId, comments, isLoggedIn, isSubscriber }: Props) {
   const formRef = useRef<HTMLFormElement>(null);
-  const router = useRouter(); // 2. Inicializar router
-  const [isPending, startTransition] = useTransition(); // 3. Usar transition para loading suave
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
 
   const handleSubmit = async (formData: FormData) => {
-    // Envolvemos na transição para o Next.js saber que estamos mudando estado
     startTransition(async () => {
         await addComment(formData);
         formRef.current?.reset();
-        router.refresh(); // 4. Força a atualização da tela
+        router.refresh();
     });
   };
 
@@ -39,8 +39,9 @@ export function Comments({ postId, comments, isLoggedIn }: Props) {
     <div className="mt-12">
       <h3 className="text-2xl font-serif font-black mb-6">Comments ({comments.length})</h3>
 
-      {/* Formulário */}
-      {isLoggedIn ? (
+      {/* Lógica de Exibição do Formulário */}
+      {isSubscriber ? (
+        // USUÁRIO ASSINANTE: Pode comentar
         <form action={handleSubmit} ref={formRef} className="mb-10 flex gap-4 items-start">
           <div className="w-10 h-10 rounded-full bg-black dark:bg-white flex-shrink-0 flex items-center justify-center text-white dark:text-black font-bold text-xs">
              ME
@@ -69,10 +70,18 @@ export function Comments({ postId, comments, isLoggedIn }: Props) {
           </div>
         </form>
       ) : (
+        // USUÁRIO GRÁTIS OU DESLOGADO: Bloqueado
         <div className="bg-stone-100 dark:bg-stone-900 p-8 rounded-xl text-center mb-10 border border-dashed border-stone-300 dark:border-stone-800">
-          <p className="text-stone-500 mb-4 font-serif italic">Would you like to share your opinion?</p>
-          <Link href="/login" className="inline-block bg-black dark:bg-white text-white dark:text-black px-6 py-2 rounded-full font-bold text-sm hover:opacity-80 transition">
-            Log in to comment
+          <div className="flex justify-center mb-3 text-stone-400">
+             <Lock size={24} />
+          </div>
+          <p className="text-stone-500 mb-4 font-serif italic">
+            {isLoggedIn 
+              ? "Subscriber-only discussion. Upgrade to join." 
+              : "Join the discussion."}
+          </p>
+          <Link href={isLoggedIn ? "/#subscribe" : "/login"} className="inline-block bg-black dark:bg-white text-white dark:text-black px-6 py-2 rounded-full font-bold text-sm hover:opacity-80 transition">
+             {isLoggedIn ? "Upgrade Plan" : "Login / Sign Up"}
           </Link>
         </div>
       )}

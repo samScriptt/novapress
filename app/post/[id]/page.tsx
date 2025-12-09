@@ -7,7 +7,7 @@ import { PostInteractions } from '@/components/PostInteractions';
 import { LikeDislike } from '@/components/LikeDislike';
 import { Comments } from '@/components/Comments';
 import { Clock } from 'lucide-react';
-import { ContentLock } from '@/components/ContentLock'; // Importe o componente
+import { ContentLock } from '@/components/ContentLock';
 
 export const revalidate = 0;
 
@@ -20,61 +20,72 @@ export default async function PostPage({ params }: PageProps) {
   const { id } = await params;
 
   // 1. Buscar Notícia
-  const { data: post } = await supabase
-    .from('posts')
-    .select('*')
-    .eq('id', id)
-    .single();
-
+  const { data: post } = await supabase.from('posts').select('*').eq('id', id).single();
   if (!post) notFound();
 
-  // 2. Verificar Usuário E Assinatura
+  // 2. Verificar Usuário e Assinatura
   const { data: { user } } = await supabase.auth.getUser();
+  const isLoggedIn = !!user;
   
   let isSubscriber = false;
+  let isDailyLimitReached = false;
+  let hasAccess = false;
+
   if (user) {
+    // Busca perfil
     const { data: profile } = await supabase
         .from('profiles')
-        .select('is_subscriber')
+        .select('is_subscriber, last_free_view_date, last_free_view_post_id')
         .eq('id', user.id)
         .single();
+    
     isSubscriber = !!profile?.is_subscriber;
+
+    if (isSubscriber) {
+        // Cenário 1: Assinante (Acesso Total)
+        hasAccess = true;
+    } else {
+        // Cenário 2: Usuário Grátis (Lógica de 1 por dia)
+        const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+        const lastViewDate = profile?.last_free_view_date; // Assumindo formato YYYY-MM-DD do banco
+        const lastViewId = profile?.last_free_view_post_id;
+
+        if (lastViewDate !== today) {
+            // Novo dia: Reseta e permite este post
+            hasAccess = true;
+            // Atualiza o banco (Side effect permitido em Server Components para analytics simples)
+            await supabase.from('profiles').update({
+                last_free_view_date: today,
+                last_free_view_post_id: id
+            }).eq('id', user.id);
+        } else {
+            // Mesmo dia
+            if (String(lastViewId) === String(id)) {
+                // Revisitando o MESMO post de hoje: Permitir
+                hasAccess = true;
+            } else {
+                // Tentando ver OUTRO post: Bloquear
+                hasAccess = false;
+                isDailyLimitReached = true;
+            }
+        }
+    }
+  } else {
+    // Cenário 3: Visitante (Sem Acesso)
+    hasAccess = false;
   }
 
-  const hasAccess = isSubscriber; // Acesso só se pagar
-  const isLoggedIn = !!user;
-
-  // 3. Buscar Interações (Só se estiver logado ou para exibir contadores)
-  const { count: likeCount } = await supabase
-    .from('likes')
-    .select('*', { count: 'exact', head: true })
-    .eq('post_id', id)
-    .eq('vote_type', 'like');
-
-  const { count: dislikeCount } = await supabase
-    .from('likes')
-    .select('*', { count: 'exact', head: true })
-    .eq('post_id', id)
-    .eq('vote_type', 'dislike');
-
+  // ... (Queries de likes e comments mantêm-se iguais) ...
+  const { count: likeCount } = await supabase.from('likes').select('*', { count: 'exact', head: true }).eq('post_id', id).eq('vote_type', 'like');
+  const { count: dislikeCount } = await supabase.from('likes').select('*', { count: 'exact', head: true }).eq('post_id', id).eq('vote_type', 'dislike');
+  
   let userVote = null;
-  let comments: any[] = [];
-
-  // Busca dados completos apenas se estiver logado (opcional, ou busca sempre para mostrar quantidade)
-  if (isLoggedIn) {
+  if (user) {
     const { data: vote } = await supabase.from('likes').select('vote_type').eq('post_id', id).eq('user_id', user.id).single();
     userVote = vote?.vote_type || null;
   }
-  
-  // Sempre buscamos comentários para mostrar que existem, mas o componente Comments vai bloquear a escrita
-  const { data: commentsData } = await supabase
-    .from('comments')
-    .select('*, profiles(username)')
-    .eq('post_id', id)
-    .order('created_at', { ascending: false });
-  
-  comments = commentsData || [];
 
+  const { data: comments } = await supabase.from('comments').select('*, profiles(username)').eq('post_id', id).order('created_at', { ascending: false });
   const words = post.content.split(/\s+/).length;
   const readTime = Math.ceil(words / 200);
 
@@ -98,7 +109,7 @@ export default async function PostPage({ params }: PageProps) {
         {/* Header do Post */}
         <div className="flex flex-wrap items-center gap-3 text-sm text-gray-500 dark:text-gray-400 font-sans mb-6">
           <span className="uppercase tracking-wider font-bold text-blue-700 dark:text-blue-400">
-            {post.category || 'Geral'}
+            {post.category || 'General'}
           </span>
           <span>•</span>
           <span>{format(new Date(post.created_at), "MMMM d, yyyy", { locale: enUS })}</span>
@@ -114,7 +125,7 @@ export default async function PostPage({ params }: PageProps) {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 border-y border-gray-200 dark:border-stone-800 py-6 mb-12">
             <div className="flex items-center gap-4">
                 <div className="w-12 h-12 rounded-full bg-black dark:bg-white flex items-center justify-center text-white dark:text-black font-bold shadow-md">
-                    IA
+                    AI
                 </div>
                 <div>
                     <p className="font-bold text-gray-900 dark:text-white">Gemini 2.5</p>
@@ -122,13 +133,18 @@ export default async function PostPage({ params }: PageProps) {
                 </div>
             </div>
 
-            <LikeDislike 
-                postId={post.id} 
-                initialLikes={likeCount || 0} 
-                initialDislikes={dislikeCount || 0}
-                userVote={userVote}
-                isLoggedIn={isLoggedIn}
-            />
+            {/* Like disponível apenas se assinante */}
+            {isSubscriber ? (
+                <LikeDislike 
+                    postId={post.id} 
+                    initialLikes={likeCount || 0} 
+                    initialDislikes={dislikeCount || 0}
+                    userVote={userVote}
+                    isLoggedIn={true}
+                />
+            ) : (
+                <div className="text-xs text-stone-400 font-serif italic">Sign up to vote</div>
+            )}
         </div>
 
         {/* Imagem */}
@@ -137,10 +153,13 @@ export default async function PostPage({ params }: PageProps) {
             <div className="overflow-hidden rounded-xl shadow-lg">
               <img src={post.image_url} alt={post.title} className="w-full h-auto object-cover transition-transform duration-700 group-hover:scale-105" />
             </div>
+            <figcaption className="text-center text-xs text-gray-400 mt-2 font-sans">
+              Image source: News Aggregator
+            </figcaption>
           </figure>
         )}
 
-        {/* ÁREA DE CONTEÚDO (COM LÓGICA DE BLUR) */}
+        {/* ÁREA DE CONTEÚDO */}
         <div className="relative">
             <div 
                 className={`
@@ -148,18 +167,23 @@ export default async function PostPage({ params }: PageProps) {
                     prose-headings:font-bold prose-headings:text-black dark:prose-headings:text-white
                     prose-a:text-blue-600 dark:prose-a:text-blue-400
                     [&>h1]:mt-12 [&>h2]:mt-10 [&>p]:mb-6
-                    ${!hasAccess ? 'blur-md select-none pointer-events-none max-h-80 overflow-hidden' : ''}
-                    `}
+                    ${!hasAccess ? 'blur-md select-none pointer-events-none max-h-80 overflow-hidden' : ''} 
+                `}
                 dangerouslySetInnerHTML={{ __html: post.content }} 
             />
             
-            {/* Overlay de Bloqueio se não estiver logado */}
-            {!hasAccess && <ContentLock isLoggedIn={isLoggedIn} />}
+            {/* Paywall Overlay */}
+            {!hasAccess && (
+                <ContentLock 
+                    isLoggedIn={isLoggedIn} 
+                    isLimitReached={isDailyLimitReached} 
+                />
+            )}
         </div>
 
-        {/* Botões de Share e Comentários (Só aparecem se desbloqueado ou parcialmente visíveis abaixo do fold) */}
-            <div className={!hasAccess ? 'hidden' : 'mt-10'}>
-              <div className="mb-16">
+        {/* Rodapé do Post */}
+        <div className={!hasAccess ? 'hidden' : 'mt-10'}>
+            <div className="mb-16">
                 <h3 className="font-sans font-bold text-sm uppercase tracking-wide text-gray-500 mb-4">Share this story</h3>
                 <PostInteractions title={post.title} />
             </div>
@@ -168,8 +192,9 @@ export default async function PostPage({ params }: PageProps) {
 
             <Comments 
                 postId={post.id} 
-                comments={comments} 
+                comments={comments || []} 
                 isLoggedIn={isLoggedIn}
+                isSubscriber={isSubscriber} // Passa o status real
             />
         </div>
 
