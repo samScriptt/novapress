@@ -3,16 +3,15 @@ import { createClient } from '@supabase/supabase-js';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { TwitterApi } from 'twitter-api-v2';
 
-// Configurações (Mantenha suas chaves no .env.local)
+// Configurações
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
+  process.env.SUPABASE_SERVICE_ROLE_KEY! // Service Role é necessária para upload sem login
 );
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
-// Mantendo o modelo solicitado (2.5 flash ou 2.0 flash conforme sua lib)
 const model = genAI.getGenerativeModel({ 
-  model: "gemini-2.5-flash", // ou gemini-1.5-flash dependendo da disponibilidade
+  model: "gemini-2.5-flash", 
   generationConfig: { responseMimeType: "application/json" }
 });
 
@@ -25,18 +24,13 @@ const twitterClient = new TwitterApi({
 
 export const dynamic = 'force-dynamic';
 
-// Editorias dinâmicas para variar o conteúdo a cada execução
 const DYNAMIC_SECTIONS = ['technology', 'business', 'science', 'general'];
 
 export async function GET(req: NextRequest) {
   try {
-    // 1. Definição Dinâmica de Tópico
-    // Escolhe uma categoria aleatória para buscar tendências variadas
     const currentSection = DYNAMIC_SECTIONS[Math.floor(Math.random() * DYNAMIC_SECTIONS.length)];
     console.log(`🔄 NovaPress Cron: Scouting for trends in [${currentSection}]...`);
 
-    // 2. Busca de Tendências Reais (Top Headlines US)
-    // Usamos 'us' para garantir conteúdo nativo em inglês e relevância global
     const apiUrl = `https://newsapi.org/v2/top-headlines?country=us&category=${currentSection}&pageSize=20&apiKey=${process.env.NEWS_API_KEY}`;
     
     const newsRes = await fetch(apiUrl);
@@ -46,11 +40,9 @@ export async function GET(req: NextRequest) {
 
     let targetArticle = null;
 
-    // 3. Filtragem Inteligente
-    // Pula artigos removidos, sem imagem ou já existentes
     for (const article of newsData.articles) {
       if (!article.title || article.title === '[Removed]') continue;
-      if (!article.urlToImage) continue; // Exige imagem para qualidade visual
+      if (!article.urlToImage) continue;
 
       const { data: existing } = await supabase
         .from('posts')
@@ -60,47 +52,44 @@ export async function GET(req: NextRequest) {
 
       if (!existing) {
         targetArticle = article;
-        break; // Pega o primeiro 'trending' válido que ainda não temos
+        break; 
       }
     }
 
     if (!targetArticle) {
-      return NextResponse.json({ message: 'No new trending articles found in this cycle.' });
+      return NextResponse.json({ message: 'No new trending articles found.' });
     }
 
     console.log(`📝 Selected Trend: ${targetArticle.title}`);
 
-    // 4. Prompt "Senior Writer" (Inglês + Long-form)
+    // --- 1. GERAÇÃO DE CONTEÚDO (IA) ---
     const prompt = `
-      Role: You are the Editor-in-Chief of "NovaPress", a premium autonomous news portal.
-      Task: Write a comprehensive, long-form feature article in English based on this source.
+      Role: You are the Editor-in-Chief and Social Media Manager of "NovaPress".
+      Task: Create a long-form feature article AND a viral tweet based on this source.
 
       SOURCE DATA:
       Title: "${targetArticle.title}"
       Description: "${targetArticle.description}"
-      Content Snippet: "${targetArticle.content}"
-      Source Name: "${targetArticle.source.name}"
+      Content: "${targetArticle.content}"
 
-      WRITING GUIDELINES:
-      1. Language: English (Professional, engaging, journalistic tone like The Verge or NYT).
-      2. Depth: Do not just summarize. Analyze the implications, provide context, and explain why this matters.
-      3. Structure:
-         - Engaging Headline (Catchy but accurate).
-         - Strong Lead Paragraph (Who, what, where, when, why).
-         - "The Big Picture" (Contextual analysis).
-         - "Why It Matters" (Impact on industry/society).
-      4. Formatting: Return ONLY the HTML body content (use <h2>, <p>, <ul>, <blockquote>). Use Tailwind classes for styling (e.g., <h2 class="text-2xl font-bold mt-8 mb-4">).
-      5. Tags: Generate 3-5 relevant hashtags/keywords.
-      6. Category: Assign one of: Tech, World, AI, Economy, Science.
+      WRITING GUIDELINES (Article):
+      1. Language: English (Native, professional, analytical).
+      2. Structure: Deep analysis, strong context, and future implications. Use Tailwind classes for HTML (e.g., <h2 class="text-2xl font-bold mt-6 mb-3">).
+      3. Length: Substantial and detailed.
 
-      REQUIRED JSON OUTPUT FORMAT:
+      WRITING GUIDELINES (Twitter/X):
+      1. Style: Viral, engaging, "Must Click". Use a "Hook" sentence.
+      2. Elements: Use 1-2 relevant emojis. Ask a provocative question or state a surprising fact.
+      3. Constraint: Max 200 characters. Do NOT include hashtags or links in the text string.
+
+      REQUIRED JSON OUTPUT:
       {
         "valid": true,
         "category": "String (Tech, World, AI, Economy, or Science)",
         "tags": ["tag1", "tag2", "tag3"],
-        "title": "Your Enhanced Headline Here",
-        "html_content": "<p>Your long-form article content...</p>",
-        "twitter_summary": "A punchy, click-worthy summary for X (max 200 chars)"
+        "title": "Compelling Headline",
+        "html_content": "<p>Article body...</p>",
+        "twitter_summary": "🔥 The viral hook text goes here..."
       }
     `;
 
@@ -108,18 +97,71 @@ export async function GET(req: NextRequest) {
     const aiResponse = JSON.parse(result.response.text());
 
     if (!aiResponse.valid) {
-      return NextResponse.json({ message: 'AI rejected the article quality.' });
+      return NextResponse.json({ message: 'AI rejected article.' });
     }
 
-    // 5. Salvar no Banco
+    // --- CORREÇÃO DO SUMMARY NULO ---
+    // Se a IA falhar em gerar o twitter_summary, usamos a descrição original ou o título como fallback
+    const finalSummary = aiResponse.twitter_summary || targetArticle.description || targetArticle.title;
+
+
+    // --- 2. PROCESSAMENTO DE IMAGEM (NOVO) ---
+    let finalImageUrl = targetArticle.urlToImage; // Default: URL original
+    let imageBuffer: Buffer | null = null;
+    let imageMimeType = 'image/jpeg';
+
+    if (targetArticle.urlToImage) {
+        try {
+            console.log('🖼️ Baixando imagem original...');
+            const imageRes = await fetch(targetArticle.urlToImage);
+            const arrayBuffer = await imageRes.arrayBuffer();
+            imageBuffer = Buffer.from(arrayBuffer);
+            
+            // Tenta detectar mime type ou assume jpeg
+            const contentType = imageRes.headers.get('content-type');
+            if (contentType) imageMimeType = contentType;
+
+            // Gera nome único para o arquivo
+            const fileName = `post-${Date.now()}.${imageMimeType.split('/')[1] || 'jpg'}`;
+
+            // Upload para o Supabase Storage (Bucket 'news-images')
+            const { data: uploadData, error: uploadError } = await supabase
+                .storage
+                .from('news-images') // Certifique-se de criar este bucket no painel
+                .upload(fileName, imageBuffer, {
+                    contentType: imageMimeType,
+                    upsert: false
+                });
+
+            if (uploadError) {
+                console.error('Erro upload Supabase:', uploadError);
+                // Mantém a URL original se der erro no upload
+            } else {
+                // Pega a URL pública do seu bucket
+                const { data: { publicUrl } } = supabase
+                    .storage
+                    .from('news-images')
+                    .getPublicUrl(fileName);
+                
+                finalImageUrl = publicUrl;
+                console.log('✅ Imagem salva no Storage:', finalImageUrl);
+            }
+
+        } catch (imgErr) {
+            console.error('Falha ao processar imagem:', imgErr);
+        }
+    }
+
+
+    // --- 3. SALVAR NO BANCO ---
     const { data: savedPost, error } = await supabase
       .from('posts')
       .insert({
         title: aiResponse.title,
         content: aiResponse.html_content,
-        summary: aiResponse.twitter_summary,
+        summary: finalSummary, // Usando o summary garantido
         original_url: targetArticle.url,
-        image_url: targetArticle.urlToImage,
+        image_url: finalImageUrl, // Usando a URL do seu Storage (ou original se falhou)
         category: aiResponse.category,
         tags: aiResponse.tags
       })
@@ -128,42 +170,48 @@ export async function GET(req: NextRequest) {
 
     if (error) throw error;
 
-    // 6. Postar no Twitter 
+
+    // --- 4. POSTAR NO TWITTER ---
     try {
         const link = `${process.env.SITE_URL || 'https://novapress.vercel.app'}/post/${savedPost.id}`;
+        
+        // Hashtags Dinâmicas
+        const dynamicHashtags = aiResponse.tags
+            .map((t: string) => `#${t.replace(/\s+/g, '')}`)
+            .join(' ');
+
+        const tweetText = `${finalSummary}\n\n👇 Read full story:\n${link}\n\n${dynamicHashtags} #NovaPress`;
 
         let mediaId = null;
 
-        if (targetArticle.urlToImage) {
+        // Reusa o buffer que já baixamos para o Storage (economiza banda)
+        if (imageBuffer) {
             try {
-                console.log('🖼️ Baixando imagem para o Twitter...');
-                const imageRes = await fetch(targetArticle.urlToImage);
-                const arrayBuffer = await imageRes.arrayBuffer();
-                const imageBuffer = Buffer.from(arrayBuffer);
-
-                // Upload para o Twitter (v1.1 é usada para upload de mídia, mesmo postando com v2)
-                // Detecta se é PNG ou JPG pelo final da url ou assume jpg
-                const isPng = targetArticle.urlToImage.toLowerCase().endsWith('.png');
-                mediaId = await twitterClient.v1.uploadMedia(imageBuffer, { mimeType: isPng ? 'image/png' : 'image/jpeg' });
-            } catch (imgError) {
-                console.error('⚠️ Falha ao processar imagem (postaremos apenas texto):', imgError);
+                // Upload para Twitter (v1.1)
+                mediaId = await twitterClient.v1.uploadMedia(imageBuffer, { mimeType: imageMimeType });
+            } catch (twImgErr) {
+                console.error('Erro upload imagem Twitter:', twImgErr);
             }
         }
 
         if (mediaId) {
             await twitterClient.v2.tweet({
-                text: (`[${aiResponse.category}] ${aiResponse.twitter_summary}\n\n${link}`),
+                text: tweetText,
                 media: { media_ids: [mediaId] }
             });
         } else {
-            await twitterClient.v2.tweet((`[${aiResponse.category}] ${aiResponse.twitter_summary}\n\n${link}`));
+            await twitterClient.v2.tweet(tweetText);
         }
 
-    } catch(e) { console.log('Twitter fail', e); }
+        console.log('🐦 Tweet enviado!');
+
+    } catch(e: any) { 
+        console.error('Twitter fail:', e); 
+    }
 
     return NextResponse.json({ 
       success: true, 
-      trend: currentSection,
+      category: aiResponse.category,
       title: aiResponse.title 
     });
 
