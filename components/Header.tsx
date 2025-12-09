@@ -129,14 +129,20 @@ export function Header() {
           </div>
 
           {/* Navegação */}
-          <nav className="flex flex-wrap justify-center gap-6 text-sm font-bold uppercase border-t border-gray-100 dark:border-stone-800 text-gray-900 dark:text-gray-300 mt-6 pt-6">
-            <Link href="/" className="...">Home</Link>
-            <Link href="/category/technology" className="...">Tech</Link>
-            <Link href="/category/world" className="...">World</Link>
-            <Link href="/category/ai" className="...">AI</Link>
-            <Link href="/category/business" className="...">Business</Link>
-            <Link href="/category/science" className="...">Science</Link>
-          </nav>
+          <nav className="flex flex-wrap justify-center gap-6 text-sm font-bold uppercase border-t border-gray-100 dark:border-stone-800 text-gray-900 dark:text-gray-300 transition-all duration-500 overflow-hidden">
+            <Link href="/" className="hover:text-blue-600 dark:hover:text-blue-400">Home</Link>
+            
+            {/* CORREÇÃO: technology -> tech */}
+            <Link href="/category/tech" className="hover:text-blue-600 dark:hover:text-blue-400">Tech</Link>
+            
+            <Link href="/category/world" className="hover:text-blue-600 dark:hover:text-blue-400">World</Link>
+            <Link href="/category/ai" className="hover:text-blue-600 dark:hover:text-blue-400">AI</Link>
+            
+            {/* CORREÇÃO: business -> economy (Pois a IA gera 'Economy') */}
+            <Link href="/category/economy" className="hover:text-blue-600 dark:hover:text-blue-400">Economy</Link>
+            
+            <Link href="/category/science" className="hover:text-blue-600 dark:hover:text-blue-400">Science</Link>
+        </nav>
         </div>
       </header>
 

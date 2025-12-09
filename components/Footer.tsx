@@ -34,10 +34,11 @@ export function Footer() {
               Seções
             </h4>
             <ul className="space-y-2 text-sm text-stone-600 dark:text-stone-400">
-              <li><Link href="/category/technology">Technology</Link></li>
+              <li><Link href="/category/tech">Technology</Link></li>
               <li><Link href="/category/world">World</Link></li>
               <li><Link href="/category/ai">Artificial Intelligence</Link></li>
-              <li><Link href="/category/business">Business</Link></li>
+              <li><Link href="/category/economy">Business</Link></li>
+              <li><Link href="/category/science">Science</Link></li>
             </ul>
           </div>
 

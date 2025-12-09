@@ -181,7 +181,7 @@ export async function GET(req: NextRequest) {
             .join(' ');
 
         const tweetText = `${finalSummary}\n\n👇 Read full story:\n${link}\n\n${dynamicHashtags} #NovaPress`;
-
+        
         let mediaId = null;
 
         // Reusa o buffer que já baixamos para o Storage (economiza banda)
