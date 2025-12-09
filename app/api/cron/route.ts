@@ -128,11 +128,38 @@ export async function GET(req: NextRequest) {
 
     if (error) throw error;
 
-    // 6. Postar no Twitter (Em Inglês)
+    // 6. Postar no Twitter 
     try {
         const link = `${process.env.SITE_URL || 'https://novapress.vercel.app'}/post/${savedPost.id}`;
-        await twitterClient.v2.tweet(`${aiResponse.twitter_summary}\n\nRead more: ${link}\n\n#NovaPress #${aiResponse.category}`);
-    } catch(e) { console.log('Twitter fail (ignored)', e); }
+
+        let mediaId = null;
+
+        if (targetArticle.urlToImage) {
+            try {
+                console.log('🖼️ Baixando imagem para o Twitter...');
+                const imageRes = await fetch(targetArticle.urlToImage);
+                const arrayBuffer = await imageRes.arrayBuffer();
+                const imageBuffer = Buffer.from(arrayBuffer);
+
+                // Upload para o Twitter (v1.1 é usada para upload de mídia, mesmo postando com v2)
+                // Detecta se é PNG ou JPG pelo final da url ou assume jpg
+                const isPng = targetArticle.urlToImage.toLowerCase().endsWith('.png');
+                mediaId = await twitterClient.v1.uploadMedia(imageBuffer, { mimeType: isPng ? 'image/png' : 'image/jpeg' });
+            } catch (imgError) {
+                console.error('⚠️ Falha ao processar imagem (postaremos apenas texto):', imgError);
+            }
+        }
+
+        if (mediaId) {
+            await twitterClient.v2.tweet({
+                text: (`[${aiResponse.category}] ${aiResponse.twitter_summary}\n\n${link}`),
+                media: { media_ids: [mediaId] }
+            });
+        } else {
+            await twitterClient.v2.tweet((`[${aiResponse.category}] ${aiResponse.twitter_summary}\n\n${link}`));
+        }
+
+    } catch(e) { console.log('Twitter fail', e); }
 
     return NextResponse.json({ 
       success: true, 
