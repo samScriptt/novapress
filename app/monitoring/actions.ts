@@ -2,7 +2,6 @@
 
 import { createClient } from '@/utils/supabase/server';
 
-// --- 1. Checagem de Status (Faltava essa função) ---
 export async function checkUserFeedbackStatus() {
   try {
     const supabase = await createClient();
@@ -10,31 +9,26 @@ export async function checkUserFeedbackStatus() {
 
     if (!user) return { canVote: false, reason: 'guest' };
 
-    // Data de 1 mês atrás
     const oneMonthAgo = new Date();
     oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
 
-    // Busca o último feedback deste usuário
     const { data: lastFeedback, error } = await supabase
       .from('site_feedback')
       .select('created_at')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
       .limit(1)
-      .maybeSingle(); // Use maybeSingle para não dar erro se não tiver nada
+      .maybeSingle();
 
     if (error) {
-      console.error("Erro ao checar feedback:", error);
-      // Em caso de erro no banco (ex: RLS), liberamos o voto para não travar a UI
+      console.error('Error checking feedback:', error);
       return { canVote: true };
     }
 
-    console.log(lastFeedback)
+    console.log(lastFeedback);
 
-    // Se nunca votou, libera
     if (!lastFeedback) return { canVote: true };
 
-    // Se votou, verifica a data
     const lastDate = new Date(lastFeedback.created_at);
     
     if (lastDate > oneMonthAgo) {
@@ -44,33 +38,32 @@ export async function checkUserFeedbackStatus() {
       return { 
         canVote: false, 
         reason: 'limit_reached',
-        nextDate: nextVoteDate.toLocaleDateString('pt-BR')
+        nextDate: nextVoteDate.toLocaleDateString('en-US')
       };
     }
 
     return { canVote: true };
 
   } catch (err) {
-    console.error("Erro crítico feedback:", err);
-    return { canVote: true }; // Fallback seguro
+    console.error('Critical feedback error:', err);
+    return { canVote: true };
   }
 }
 
-// --- 2. Salvar Feedback ---
 export async function submitFeedback(formData: FormData) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  if (!user) return { error: "Login required." };
+  if (!user) return { error: 'Login required.' };
 
   const status = await checkUserFeedbackStatus();
-  if (!status.canVote) return { error: "You have already voted recently." };
+  if (!status.canVote) return { error: 'You have already voted recently.' };
 
   const preferred_topics = formData.getAll('topics') as string[];
   const suggestion = formData.get('suggestion') as string;
   const rating = Number(formData.get('rating'));
 
-  if (rating < 1 || rating > 5) return { error: "Invalid rating." };
+  if (rating < 1 || rating > 5) return { error: 'Invalid rating.' };
 
   const { error } = await supabase.from('site_feedback').insert({
     user_id: user.id,
@@ -79,12 +72,11 @@ export async function submitFeedback(formData: FormData) {
     rating
   });
 
-  if (error) return { error: "Failed to save. Try again." };
+  if (error) return { error: 'Failed to save. Try again.' };
 
   return { success: true };
 }
 
-// --- 3. Logs ---
 export async function logSystemEvent(
   eventType: 'login' | 'view_post' | 'page_view', 
   details: any = {}
@@ -99,6 +91,5 @@ export async function logSystemEvent(
       event_data: details
     });
   } catch (error) {
-    // Silencioso
   }
 }

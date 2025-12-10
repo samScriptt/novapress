@@ -8,7 +8,6 @@ export function PostInteractions({ title }: { title: string }) {
   const [shareUrl, setShareUrl] = useState("");
 
   useEffect(() => {
-    // Define URL ao montar (evita erro no SSR)
     setShareUrl(window.location.href);
 
     const checkScroll = () => {
@@ -20,13 +19,16 @@ export function PostInteractions({ title }: { title: string }) {
     return () => window.removeEventListener("scroll", checkScroll);
   }, []);
 
-  const scrollToTop = () =>
+  const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   const share = (platform: string) => {
     if (!shareUrl) return;
 
-    const text = encodeURIComponent(`Confira esta notícia no NovaPress: ${title}`);
+    const text = encodeURIComponent(
+      `Check out this article on NovaPress: ${title}`
+    );
     const link = encodeURIComponent(shareUrl);
 
     const URLs: Record<string, string> = {
@@ -43,20 +45,18 @@ export function PostInteractions({ title }: { title: string }) {
   const copyLink = async () => {
     try {
       await navigator.clipboard.writeText(shareUrl);
-      alert("Link copiado!");
+      alert("Link copied!");
     } catch {
-      // fallback se o navegador bloquear clipboard API
-      prompt("Copie o link manualmente:", shareUrl);
+      prompt("Copy the link manually:", shareUrl);
     }
   };
 
   return (
     <>
-      {/* Botões de compartilhar */}
       <div className="flex gap-4 my-8">
         <button
           onClick={() => share("whatsapp")}
-          aria-label="Compartilhar no WhatsApp"
+          aria-label="Share on WhatsApp"
           className="p-3 bg-green-500 text-white rounded-full hover:bg-green-600 transition hover:scale-110"
         >
           <MessageCircle size={20} />
@@ -64,7 +64,7 @@ export function PostInteractions({ title }: { title: string }) {
 
         <button
           onClick={() => share("twitter")}
-          aria-label="Compartilhar no X/Twitter"
+          aria-label="Share on X/Twitter"
           className="p-3 bg-black text-white dark:bg-white dark:text-black rounded-full hover:opacity-80 transition hover:scale-110"
         >
           <Twitter size={20} />
@@ -72,7 +72,7 @@ export function PostInteractions({ title }: { title: string }) {
 
         <button
           onClick={() => share("linkedin")}
-          aria-label="Compartilhar no LinkedIn"
+          aria-label="Share on LinkedIn"
           className="p-3 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition hover:scale-110"
         >
           <Linkedin size={20} />
@@ -80,19 +80,22 @@ export function PostInteractions({ title }: { title: string }) {
 
         <button
           onClick={copyLink}
-          aria-label="Copiar link"
+          aria-label="Copy link"
           className="p-3 bg-gray-200 text-gray-700 dark:bg-stone-800 dark:text-gray-200 rounded-full hover:bg-gray-300 transition hover:scale-110"
         >
           <Share2 size={20} />
         </button>
       </div>
 
-      {/* Botão "voltar ao topo" */}
       <button
         onClick={scrollToTop}
-        aria-label="Voltar ao topo"
+        aria-label="Back to top"
         className={`fixed bottom-8 right-8 p-3 bg-black text-white dark:bg-white dark:text-black rounded-full shadow-xl transition-all duration-500 z-50
-          ${showScroll ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10 pointer-events-none"}
+          ${
+            showScroll
+              ? "opacity-100 translate-y-0"
+              : "opacity-0 translate-y-10 pointer-events-none"
+          }
         `}
       >
         <ArrowUp size={24} />

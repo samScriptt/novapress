@@ -12,7 +12,6 @@ export function Typewriter({ text, speed = 30, className, cursor = true }: Typew
   const [displayedText, setDisplayedText] = useState("");
 
   useEffect(() => {
-    // Reset se o texto mudar
     setDisplayedText(""); 
     let i = 0;
     

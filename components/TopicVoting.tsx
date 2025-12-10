@@ -31,7 +31,6 @@ export function TopicVoting() {
         }
       } catch (error) {
         console.error("Feedback init failed:", error);
-        // Se der erro, assume que pode votar para não esconder o componente
         if (mounted) setStatus('can_vote'); 
       }
     }
@@ -56,7 +55,7 @@ export function TopicVoting() {
     setSubmitting(false);
   }
 
-  // Loading State (Opcional: Skeleton)
+  // Loading State
   if (status === 'loading') {
     return (
       <div className="flex justify-center py-12 opacity-50">
@@ -65,7 +64,7 @@ export function TopicVoting() {
     );
   }
 
-  // CASO 1: Anônimo
+  // CASO 1: Anonymous
   if (status === 'guest') {
     return (
         <section className="bg-zinc-100 dark:bg-zinc-900 border border-dashed border-zinc-300 dark:border-zinc-800 rounded-xl p-8 text-center my-16 opacity-70 hover:opacity-100 transition font-mono">
@@ -78,7 +77,7 @@ export function TopicVoting() {
     );
   }
 
-  // CASO 2: Já votou (Limit Reached)
+  // CASO 2: Voted (Limit Reached)
   if (status === 'limit_reached') {
     return (
       <div className="bg-zinc-50 dark:bg-zinc-900 p-10 rounded-xl text-center border border-zinc-200 dark:border-zinc-800 my-16 animate-in fade-in zoom-in duration-500 font-mono">
@@ -96,7 +95,7 @@ export function TopicVoting() {
     );
   }
 
-  // CASO 3: Pode Votar (Formulário)
+  // CASO 3: Can Vote (Form)
   return (
     <section className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-8 shadow-sm my-16 animate-in slide-in-from-bottom-4 font-mono">
       <h2 className="text-2xl font-black mb-8 text-center text-black dark:text-white uppercase tracking-tight">

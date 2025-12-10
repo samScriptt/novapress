@@ -20,11 +20,9 @@ export default async function PostPage({ params }: PageProps) {
   const supabase = await createClient();
   const { id } = await params;
 
-  // 1. Buscar Notícia
   const { data: post } = await supabase.from('posts').select('*').eq('id', id).single();
   if (!post) notFound();
 
-  // 2. Verificar Usuário e Assinatura (Sua lógica de negócio)
   const { data: { user } } = await supabase.auth.getUser();
   const isLoggedIn = !!user;
   
@@ -50,7 +48,10 @@ export default async function PostPage({ params }: PageProps) {
 
         if (lastViewDate !== today) {
             hasAccess = true;
-            await supabase.from('profiles').update({ last_free_view_date: today, last_free_view_post_id: id }).eq('id', user.id);
+            await supabase
+              .from('profiles')
+              .update({ last_free_view_date: today, last_free_view_post_id: id })
+              .eq('id', user.id);
         } else {
             if (String(lastViewId) === String(id)) hasAccess = true;
             else {
@@ -63,15 +64,34 @@ export default async function PostPage({ params }: PageProps) {
     hasAccess = false;
   }
 
-  // 3. Likes e Comentários
-  const { count: likeCount } = await supabase.from('likes').select('*', { count: 'exact', head: true }).eq('post_id', id).eq('vote_type', 'like');
-  const { count: dislikeCount } = await supabase.from('likes').select('*', { count: 'exact', head: true }).eq('post_id', id).eq('vote_type', 'dislike');
+  const { count: likeCount } = await supabase
+    .from('likes')
+    .select('*', { count: 'exact', head: true })
+    .eq('post_id', id)
+    .eq('vote_type', 'like');
+
+  const { count: dislikeCount } = await supabase
+    .from('likes')
+    .select('*', { count: 'exact', head: true })
+    .eq('post_id', id)
+    .eq('vote_type', 'dislike');
+
   let userVote = null;
   if (user) {
-    const { data: vote } = await supabase.from('likes').select('vote_type').eq('post_id', id).eq('user_id', user.id).single();
+    const { data: vote } = await supabase
+      .from('likes')
+      .select('vote_type')
+      .eq('post_id', id)
+      .eq('user_id', user.id)
+      .single();
     userVote = vote?.vote_type || null;
   }
-  const { data: comments } = await supabase.from('comments').select('*, profiles(username)').eq('post_id', id).order('created_at', { ascending: false });
+
+  const { data: comments } = await supabase
+    .from('comments')
+    .select('*, profiles(username)')
+    .eq('post_id', id)
+    .order('created_at', { ascending: false });
   
   const words = post.content.split(/\s+/).length;
   const readTime = Math.ceil(words / 200);
@@ -83,11 +103,13 @@ export default async function PostPage({ params }: PageProps) {
       <div className="container mx-auto px-4 max-w-3xl py-8">
         
         <div className="mb-8 border-b border-dashed border-zinc-300 dark:border-green-900/50 pb-8">
-            <Link href="/" className="inline-flex items-center gap-2 text-xs uppercase tracking-widest text-zinc-400 dark:text-green-700 hover:text-black dark:hover:text-green-400 mb-6 transition-colors">
+            <Link
+              href="/"
+              className="inline-flex items-center gap-2 text-xs uppercase tracking-widest text-zinc-400 dark:text-green-700 hover:text-black dark:hover:text-green-400 mb-6 transition-colors"
+            >
                 <ArrowLeft size={14} /> Back_to_Feed
             </Link>
 
-            {/* Meta Dados */}
             <div className="flex flex-wrap items-center gap-4 text-[10px] uppercase tracking-widest text-zinc-400 dark:text-green-800/80 font-bold mb-4">
                 <span className="text-blue-600 dark:text-green-500 bg-blue-50 dark:bg-green-900/20 px-2 py-1 rounded">
                     {post.category || 'DATA_STREAM'}
@@ -95,18 +117,20 @@ export default async function PostPage({ params }: PageProps) {
                 <span>//</span>
                 <span>{formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}</span>
                 <span>//</span>
-                <span className="flex items-center gap-1"><Clock size={10} /> {readTime}MIN_READ</span>
+                <span className="flex items-center gap-1">
+                  <Clock size={10} /> {readTime}MIN_READ
+                </span>
             </div>
 
-            {/* Título Typewriter */}
             <h1 className="text-3xl md:text-5xl font-black leading-tight mb-8 text-black dark:text-green-500">
                 <Typewriter text={post.title} speed={20} cursor={true} />
             </h1>
 
-            {/* Autor e Status */}
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-black dark:bg-green-900/30 border border-green-500/50 text-white dark:text-green-400 flex items-center justify-center font-bold text-xs">AI</div>
+                    <div className="w-8 h-8 bg-black dark:bg-green-900/30 border border-green-500/50 text-white dark:text-green-400 flex items-center justify-center font-bold text-xs">
+                      AI
+                    </div>
                     <div className="text-xs uppercase leading-tight">
                         <p className="font-bold text-black dark:text-green-300">Gemini_Unit_2.5</p>
                         <p className="text-zinc-400 dark:text-green-800">Automated_Editor</p>
@@ -115,7 +139,6 @@ export default async function PostPage({ params }: PageProps) {
             </div>
         </div>
 
-        {/* IMAGEM DA NOTÍCIA (Grande e Colorida) */}
         {post.image_url && (
             <div className="mb-12 border border-zinc-200 dark:border-green-900/50 p-1 bg-white dark:bg-green-900/5 rounded-sm">
                 <div className="aspect-video relative overflow-hidden">
@@ -125,13 +148,14 @@ export default async function PostPage({ params }: PageProps) {
                         className="w-full h-full object-cover transition-transform duration-700 hover:scale-[1.02]" 
                     />
                     <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
-                        <p className="text-[10px] text-zinc-400 font-mono uppercase tracking-widest">Source_Visual_Data</p>
+                        <p className="text-[10px] text-zinc-400 font-mono uppercase tracking-widest">
+                          Source_Visual_Data
+                        </p>
                     </div>
                 </div>
             </div>
         )}
 
-        {/* ÁREA DE CONTEÚDO */}
         <div className="relative group">
             <div 
                 className={`
@@ -146,7 +170,6 @@ export default async function PostPage({ params }: PageProps) {
                 dangerouslySetInnerHTML={{ __html: post.content }} 
             />
             
-            {/* Paywall */}
             {!hasAccess && (
                 <ContentLock 
                     isLoggedIn={isLoggedIn} 
@@ -161,7 +184,6 @@ export default async function PostPage({ params }: PageProps) {
             )}
         </div>
 
-        {/* Interações */}
         <div className={!hasAccess ? 'hidden' : 'mt-12'}>
             <div className="flex flex-col md:flex-row justify-between items-center gap-6 p-6 bg-zinc-100 dark:bg-green-900/10 border border-zinc-200 dark:border-green-900/30 rounded-sm mb-12">
                 <div className="flex items-center gap-4">
@@ -170,7 +192,7 @@ export default async function PostPage({ params }: PageProps) {
                         initialLikes={likeCount || 0} 
                         initialDislikes={dislikeCount || 0}
                         userVote={userVote}
-                        isLoggedIn={true} // Se chegou aqui, tem acesso
+                        isLoggedIn={true}
                     />
                 </div>
                 <div className="w-full md:w-auto">

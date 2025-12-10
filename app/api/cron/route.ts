@@ -3,10 +3,10 @@ import { createClient } from '@supabase/supabase-js';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { TwitterApi } from 'twitter-api-v2';
 
-// Configurações
+// Configurations
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY! // Service Role é necessária para upload sem login
+  process.env.SUPABASE_SERVICE_ROLE_KEY! // Service Role is required for uploads without login
 );
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
@@ -62,7 +62,7 @@ export async function GET(req: NextRequest) {
 
     console.log(`📝 Selected Trend: ${targetArticle.title}`);
 
-    // --- 1. GERAÇÃO DE CONTEÚDO (IA) ---
+    // --- 1. CONTENT GENERATION (AI) ---
     const prompt = `
       Role: You are the Editor-in-Chief and Social Media Manager of "NovaPress".
       Task: Create a long-form feature article AND a viral tweet based on this source.
@@ -100,68 +100,68 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ message: 'AI rejected article.' });
     }
 
-    // --- CORREÇÃO DO SUMMARY NULO ---
-    // Se a IA falhar em gerar o twitter_summary, usamos a descrição original ou o título como fallback
+    // --- NULL SUMMARY FIX ---
+    // If the AI fails to generate twitter_summary, use the original description or title as fallback
     const finalSummary = aiResponse.twitter_summary || targetArticle.description || targetArticle.title;
 
 
-    // --- 2. PROCESSAMENTO DE IMAGEM (NOVO) ---
-    let finalImageUrl = targetArticle.urlToImage; // Default: URL original
+    // --- 2. IMAGE PROCESSING (NEW) ---
+    let finalImageUrl = targetArticle.urlToImage; // Default: original URL
     let imageBuffer: Buffer | null = null;
     let imageMimeType = 'image/jpeg';
 
     if (targetArticle.urlToImage) {
         try {
-            console.log('🖼️ Baixando imagem original...');
+            console.log('🖼️ Downloading original image...');
             const imageRes = await fetch(targetArticle.urlToImage);
             const arrayBuffer = await imageRes.arrayBuffer();
             imageBuffer = Buffer.from(arrayBuffer);
             
-            // Tenta detectar mime type ou assume jpeg
+            // Attempt to detect mime type or assume jpeg
             const contentType = imageRes.headers.get('content-type');
             if (contentType) imageMimeType = contentType;
 
-            // Gera nome único para o arquivo
+            // Generate a unique file name
             const fileName = `post-${Date.now()}.${imageMimeType.split('/')[1] || 'jpg'}`;
 
-            // Upload para o Supabase Storage (Bucket 'news-images')
+            // Upload to Supabase Storage (Bucket 'news-images')
             const { data: uploadData, error: uploadError } = await supabase
                 .storage
-                .from('news-images') // Certifique-se de criar este bucket no painel
+                .from('news-images') // Make sure this bucket exists in the dashboard
                 .upload(fileName, imageBuffer, {
                     contentType: imageMimeType,
                     upsert: false
                 });
 
             if (uploadError) {
-                console.error('Erro upload Supabase:', uploadError);
-                // Mantém a URL original se der erro no upload
+                console.error('Supabase upload error:', uploadError);
+                // Keep original URL if upload fails
             } else {
-                // Pega a URL pública do seu bucket
+                // Get the public URL from the bucket
                 const { data: { publicUrl } } = supabase
                     .storage
                     .from('news-images')
                     .getPublicUrl(fileName);
                 
                 finalImageUrl = publicUrl;
-                console.log('✅ Imagem salva no Storage:', finalImageUrl);
+                console.log('✅ Image saved to Storage:', finalImageUrl);
             }
 
         } catch (imgErr) {
-            console.error('Falha ao processar imagem:', imgErr);
+            console.error('Failed to process image:', imgErr);
         }
     }
 
 
-    // --- 3. SALVAR NO BANCO ---
+    // --- 3. SAVE TO DATABASE ---
     const { data: savedPost, error } = await supabase
       .from('posts')
       .insert({
         title: aiResponse.title,
         content: aiResponse.html_content,
-        summary: finalSummary, // Usando o summary garantido
+        summary: finalSummary, // Using guaranteed summary
         original_url: targetArticle.url,
-        image_url: finalImageUrl, // Usando a URL do seu Storage (ou original se falhou)
+        image_url: finalImageUrl, // Using Storage URL (or original if upload failed)
         category: aiResponse.category,
         tags: aiResponse.tags
       })
@@ -171,11 +171,11 @@ export async function GET(req: NextRequest) {
     if (error) throw error;
 
 
-    // --- 4. POSTAR NO TWITTER ---
+    // --- 4. POST TO TWITTER ---
     try {
       const link = `${process.env.SITE_URL || 'https://novapress.vercel.app'}/post/${savedPost.id}`;
 
-      // Texto do tweet SEM hashtags dinâmicas
+      // Tweet text WITHOUT dynamic hashtags
       function buildSafeTweet(summary: string, link: string) {
         const suffix = `\n\n👇 Read full story:\n${link}\n\n#NovaPress`;
         const maxSummaryLength = 280 - suffix.length;
@@ -192,14 +192,14 @@ export async function GET(req: NextRequest) {
 
       let mediaId: string | null = null;
 
-      // Reusa o buffer que já baixamos para o Storage (economiza banda)
+      // Reuse the buffer already downloaded for Storage (saves bandwidth)
       if (imageBuffer) {
           try {
               mediaId = await twitterClient.v1.uploadMedia(imageBuffer, {
                   mimeType: imageMimeType
               });
           } catch (twImgErr) {
-              console.error('Erro upload imagem Twitter:', twImgErr);
+              console.error('Twitter image upload error:', twImgErr);
           }
       }
 
@@ -214,9 +214,9 @@ export async function GET(req: NextRequest) {
           });
       }
 
-      console.log('🐦 Tweet enviado!');
+      console.log('🐦 Tweet sent!');
   } catch (e: any) {
-      console.error('Twitter fail:', e?.data || e);
+      console.error('Twitter failure:', e?.data || e);
   }
 
 

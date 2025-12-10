@@ -3,7 +3,7 @@ import { createClient } from '@/utils/supabase/server';
 import Stripe from 'stripe';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2025-01-27.acacia', // Use a versão mais recente sugerida pelo VS Code
+  apiVersion: '2025-01-27.acacia',
 });
 
 export async function POST(req: NextRequest) {
@@ -12,10 +12,9 @@ export async function POST(req: NextRequest) {
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) {
-      return NextResponse.json({ error: 'Não logado' }, { status: 401 });
+      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
 
-    // Cria a sessão de checkout
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       line_items: [
@@ -28,7 +27,6 @@ export async function POST(req: NextRequest) {
       success_url: `${req.headers.get('origin')}/?success=true`,
       cancel_url: `${req.headers.get('origin')}/?canceled=true`,
       customer_email: user.email,
-      // O PULO DO GATO: Passamos o ID do Supabase nos metadados para o Webhook saber quem pagou
       metadata: {
         userId: user.id,
       },

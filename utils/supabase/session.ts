@@ -31,11 +31,9 @@ export async function updateSession(request: NextRequest) {
     }
   )
 
-  // Recupera o usuário
   const { data: { user } } = await supabase.auth.getUser()
 
-  // REGRAS DE PROTEÇÃO
-  // Se não tiver usuário E tentar acessar rota protegida, manda pro login
+  // If there is no user and attempts to access a protected route, redirect to login.
   if (
     !user &&
     !request.nextUrl.pathname.startsWith('/login') &&

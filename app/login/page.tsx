@@ -25,10 +25,10 @@ export default function LoginPage() {
   return (
     <main className="min-h-screen grid grid-cols-1 lg:grid-cols-2 bg-zinc-50 dark:bg-[#050505] text-zinc-900 dark:text-zinc-200 transition-colors duration-300 font-sans">
       
-      {/* --- LADO ESQUERDO: TECH EDITORIAL COVER --- */}
+      {/* --- LEFT SIDE: TECH EDITORIAL COVER --- */}
       <div className="relative hidden lg:flex flex-col justify-between p-16 bg-zinc-900 text-white overflow-hidden">
         
-        {/* Background Imagem Abstrata/Tech */}
+        {/* Abstract / Tech Background Image */}
         <div className="absolute inset-0 z-0">
              <div 
                 className="absolute inset-0 bg-cover bg-center opacity-50 mix-blend-overlay"
@@ -36,11 +36,11 @@ export default function LoginPage() {
             ></div>
             <div className="absolute inset-0 bg-gradient-to-t from-black via-zinc-900/40 to-black/80"></div>
             
-            {/* Grid Decorativo Sutil */}
+            {/* Subtle Decorative Grid */}
             <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:60px_60px] pointer-events-none"></div>
         </div>
 
-        {/* Marca & Header Técnico */}
+        {/* Brand & Technical Header */}
         <div className="relative z-10 flex justify-between items-start">
             <div className="flex items-center gap-3">
                 <div className="bg-white text-black p-1.5 rounded-sm">
@@ -57,7 +57,7 @@ export default function LoginPage() {
             </div>
         </div>
 
-        {/* Conteúdo Central */}
+        {/* Main Content */}
         <div className="relative z-10 max-w-lg mt-auto mb-auto">
             <div className="mb-6 inline-block border border-white/20 bg-white/5 backdrop-blur-sm px-3 py-1 rounded-full">
                 <span className="text-[10px] font-mono uppercase tracking-widest text-zinc-300">
@@ -77,7 +77,7 @@ export default function LoginPage() {
             </div>
         </div>
 
-        {/* Footer Técnico */}
+        {/* Technical Footer */}
         <div className="relative z-10 border-t border-white/10 pt-6 flex justify-between text-[10px] font-mono text-zinc-500 uppercase tracking-wider">
             <div className="flex gap-6">
                 <span>Secure_Connection_TLS</span>
@@ -89,7 +89,7 @@ export default function LoginPage() {
         </div>
       </div>
 
-      {/* --- LADO DIREITO: FORMULÁRIO CLEAN --- */}
+      {/* --- RIGHT SIDE: CLEAN FORM --- */}
       <div className="flex flex-col justify-center items-center p-8 lg:p-24 relative bg-white dark:bg-[#09090b]">
         
         <Link 
