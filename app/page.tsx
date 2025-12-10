@@ -1,8 +1,9 @@
 import { createClient } from '@supabase/supabase-js';
 import Link from 'next/link';
-import { Header } from '@/components/Header'; // Usando o novo Header animado
-import { ArrowLeft, ArrowRight } from 'lucide-react';
-import { enUS } from 'date-fns/locale'; // Use enUS
+import { Header } from '@/components/Header';
+import { ArrowRight, Clock, Hash, Zap } from 'lucide-react';
+import { formatDistanceToNow } from 'date-fns';
+import { enUS } from 'date-fns/locale';
 import { TopicVoting } from '@/components/TopicVoting'; // Importe
 
 const supabase = createClient(
@@ -13,144 +14,135 @@ const supabase = createClient(
 export const revalidate = 0;
 
 interface HomeProps {
-  searchParams: Promise<{ q?: string; page?: string }>; // Adicionado page
+  searchParams: Promise<{ q?: string; page?: string }>;
 }
 
 export default async function Home({ searchParams }: HomeProps) {
   const params = await searchParams;
   const searchQuery = params.q;
-  
-  // 1. Lógica de Paginação
   const currentPage = Number(params.page) || 1;
-  const itemsPerPage = 10; // Requisito do usuário: max 10 por página
+  
+  // Grid maior, então buscamos 12 itens (múltiplo de 3 e 4)
+  const itemsPerPage = 9; 
   const from = (currentPage - 1) * itemsPerPage;
   const to = from + itemsPerPage - 1;
 
-  // 2. Construção da Query
-  let query = supabase
-    .from('posts')
-    .select('*', { count: 'exact' }) // Pede o total de itens para calcular páginas
-    .order('created_at', { ascending: false })
-    .range(from, to); // Aplica a paginação no banco
+  let query = supabase.from('posts').select('*', { count: 'exact' }).order('created_at', { ascending: false }).range(from, to);
 
-  if (searchQuery) {
-    query = query.or(`title.ilike.%${searchQuery}%,summary.ilike.%${searchQuery}%`);
-  }
+  if (searchQuery) query = query.or(`title.ilike.%${searchQuery}%,summary.ilike.%${searchQuery}%`);
 
   const { data: posts, count } = await query;
+  
+  const heroPost = (!searchQuery && currentPage === 1 && posts?.length) ? posts[0] : null;
+  const gridPosts = heroPost ? posts!.slice(1) : (posts || []);
 
   const totalPages = count ? Math.ceil(count / itemsPerPage) : 1;
-  const hasNextPage = currentPage < totalPages;
-  const hasPrevPage = currentPage > 1;
-
-  // Se for busca ou página > 1, não mostramos Hero Section, apenas Grid
-  const isFirstPage = currentPage === 1;
-  const showHero = !searchQuery && isFirstPage && posts && posts.length > 0;
-  
-  const heroPost = showHero ? posts![0] : null;
-  const gridPosts = showHero ? posts!.slice(1) : (posts || []);
 
   return (
-    <main className="bg-stone-50 dark:bg-stone-950 text-stone-900 dark:text-stone-100 transition-colors duration-300">
-      
-      {/* Novo Header Animado */}
+    <main className="min-h-screen bg-zinc-50 dark:bg-black pt-20 pb-12">
       <Header />
 
-      <div className="container mx-auto px-4 py-12 min-h-[60vh]">
+      <div className="container mx-auto px-4">
         
-        {/* Aviso de Busca */}
-        {searchQuery && (
-             <div className="mb-8 p-4 bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500">
-                <h2 className="text-xl font-serif font-bold">Results for: "{searchQuery}"</h2>
-             </div>
-        )}
+        {/* Status Bar */}
+        <div className="flex items-center gap-2 mb-8 text-[10px] uppercase tracking-widest text-zinc-400 dark:text-green-800/80 font-bold font-mono">
+            <span>ROOT</span>
+            <span>//</span>
+            <span>NEWS_FEED</span>
+            <span>//</span>
+            <span className="text-black dark:text-green-500 animate-pulse">{searchQuery ? `QUERY=${searchQuery}` : 'LIVE_STREAM'}</span>
+        </div>
 
-        {/* Hero Section (Apenas na página 1 e sem busca) */}
+        {/* HERO: Layout Técnico */}
         {heroPost && (
-          <section className="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-16 border-b border-gray-300 dark:border-stone-800 pb-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
-              <div className="lg:col-span-8">
-              <div className="aspect-video bg-gray-200 dark:bg-stone-800 overflow-hidden mb-4 rounded-sm relative group">
-                <Link href={`/post/${heroPost.id}`}>
+          <section className="mb-12 border-b border-zinc-200 dark:border-green-900/30 pb-12">
+            <Link href={`/post/${heroPost.id}`} className="grid grid-cols-1 lg:grid-cols-12 gap-6 group">
+                <div className="lg:col-span-8 relative overflow-hidden bg-zinc-200 dark:bg-green-900/10 border border-zinc-300 dark:border-green-900/50 rounded-sm">
+                    {/* Linhas de scan decorativas */}
+                    <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.1)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] z-10 pointer-events-none bg-[length:100%_2px,3px_100%]"></div>
+                    
                     {heroPost.image_url && (
-                    <img src={heroPost.image_url} alt={heroPost.title} className="w-full h-full object-cover hover:scale-105 transition duration-700" />
+                        // SEM GRAYSCALE AQUI
+                        <img src={heroPost.image_url} alt="" className="w-full h-full object-cover opacity-100 group-hover:scale-[1.02] transition-all duration-700" />
                     )}
-                    <span className="absolute top-4 left-4 bg-blue-600 text-white text-xs font-bold px-3 py-1 uppercase shadow-md z-10">
-                        {heroPost.category || 'Destaque'}
-                    </span>
-                </Link>
-              </div>
-            </div>
-            <div className="lg:col-span-4 flex flex-col justify-center">
-              <span className="bg-black dark:bg-white text-white dark:text-black text-xs font-bold px-2 py-1 w-fit mb-4 uppercase">Headline</span>
-              <Link href={`/post/${heroPost.id}`}>
-                <h2 className="text-3xl md:text-4xl font-serif font-bold leading-tight mb-4 hover:underline decoration-2 underline-offset-4 text-black dark:text-white cursor-pointer">
-                  {heroPost.title}
-                </h2>
-              </Link>
-              <p className="text-gray-600 dark:text-gray-300 mb-4 line-clamp-4 leading-relaxed font-serif">
-                {heroPost.summary}
-              </p>
-            </div>
+                    <div className="absolute top-0 left-0 bg-blue-600 text-white dark:bg-green-600 dark:text-black text-[10px] font-bold px-3 py-1 uppercase z-20 font-mono">
+                        Priority::High
+                    </div>
+                </div>
+                <div className="lg:col-span-4 flex flex-col justify-end">
+                    <h2 className="text-2xl md:text-4xl font-bold leading-none mb-4 font-mono group-hover:text-blue-600 dark:group-hover:text-green-400 transition-colors">
+                        <span className="text-blue-600 dark:text-green-500 mr-2 opacity-0 group-hover:opacity-100 transition-opacity">&gt;</span>
+                        {heroPost.title}
+                    </h2>
+                    <p className="text-zinc-600 dark:text-green-400/80 text-xs leading-relaxed mb-6 border-l-2 border-zinc-300 dark:border-green-900 pl-3 font-mono">
+                        {heroPost.summary}
+                    </p>
+                    <div className="mt-auto flex items-center justify-between text-[10px] text-zinc-400 dark:text-green-800 uppercase tracking-wider font-mono">
+                        <span>ID: {heroPost.id}</span>
+                        <span>{formatDistanceToNow(new Date(heroPost.created_at), { addSuffix: true })}</span>
+                    </div>
+                </div>
+            </Link>
           </section>
         )}
 
-        {/* Grid de Notícias */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-12">
+        {/* GRID: 4 Colunas em telas grandes (XL) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {gridPosts.map((post) => (
-            <Link href={`/post/${post.id}`} key={post.id}>
-              <article className="group cursor-pointer flex flex-col h-full">
-                <div className="aspect-[3/2] bg-gray-100 dark:bg-stone-800 overflow-hidden mb-4 rounded-sm relative">
-                  {post.image_url ? (
-                    <img src={post.image_url} alt={post.title} className="w-full h-full object-cover group-hover:scale-105 transition duration-500" />
-                  ) : <div className="w-full h-full flex items-center justify-center text-gray-300">No Image</div>}
-                   <span className="absolute bottom-2 left-2 bg-black/70 backdrop-blur-sm text-white text-[10px] font-bold px-2 py-1 uppercase">
-                        {post.category || 'News'}
-                    </span>
+            <Link href={`/post/${post.id}`} key={post.id} className="group flex flex-col h-full bg-white dark:bg-zinc-900/40 border border-zinc-200 dark:border-green-900/30 hover:border-black dark:hover:border-green-500 transition-colors rounded-sm overflow-hidden">
+                
+                {/* Imagem do Card (Colorida) */}
+                <div className="aspect-[16/9] bg-zinc-100 dark:bg-zinc-800 overflow-hidden relative border-b border-zinc-100 dark:border-green-900/30">
+                    {post.image_url ? (
+                        // SEM GRAYSCALE AQUI TAMBÉM
+                        <img src={post.image_url} alt="" className="w-full h-full object-cover opacity-90 group-hover:opacity-100 group-hover:scale-105 transition-transform duration-500" />
+                    ) : (
+                        <div className="w-full h-full flex items-center justify-center text-zinc-300 dark:text-green-900">
+                            <Zap size={24} />
+                        </div>
+                    )}
+                    
+                    <div className="absolute top-2 left-2">
+                        <span className="text-[10px] font-bold font-mono uppercase text-white bg-black/70 backdrop-blur-sm px-2 py-1 rounded">
+                            {post.category || 'RAW'}
+                        </span>
+                    </div>
                 </div>
-                <div className="border-l-2 border-black dark:border-stone-600 pl-4 flex-grow group-hover:border-blue-600 dark:group-hover:border-blue-400 transition-colors">
-                  <h3 className="text-xl font-serif font-bold leading-snug mb-2 text-black dark:text-white group-hover:text-blue-700 dark:group-hover:text-blue-400 transition">
-                    {post.title}
-                  </h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-3 leading-relaxed font-serif">
-                    {post.summary}
-                  </p>
+                
+                <div className="p-4 flex flex-col flex-grow">
+                    <h3 className="font-bold font-mono text-sm leading-snug mb-3 group-hover:text-blue-600 dark:group-hover:text-green-400 transition-colors">
+                        {post.title}
+                    </h3>
+                    
+                    <div className="mt-auto pt-3 flex items-center justify-between text-[10px] text-zinc-400 dark:text-green-800 font-mono border-t border-zinc-100 dark:border-green-900/30">
+                        <div className="flex items-center gap-1">
+                            <Clock size={10} />
+                            <span>{formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}</span>
+                        </div>
+                        <ArrowRight size={12} className="opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition-all text-blue-600 dark:text-green-500" />
+                    </div>
                 </div>
-              </article>
             </Link>
           ))}
         </div>
-        
-        {(!posts || posts.length === 0) && (
-            <div className="text-center py-20 opacity-50 font-serif">No news found on this page.</div>
-        )}
 
-        {/* Controles de Paginação */}
-        <div className="mt-20 flex justify-between items-center border-t border-gray-200 dark:border-stone-800 pt-8">
-            <div>
-                {hasPrevPage ? (
-                    <Link 
-                        href={`/?page=${currentPage - 1}${searchQuery ? `&q=${searchQuery}` : ''}`}
-                        className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-stone-900 border border-gray-300 dark:border-stone-700 rounded hover:bg-gray-100 dark:hover:bg-stone-800 transition font-bold text-sm"
-                    >
-                        <ArrowLeft size={16} /> Previous
-                    </Link>
-                ) : <div />}
-            </div>
-
-            <span className="text-sm font-serif text-gray-500">
-                Page {currentPage} of {totalPages}
+        {/* Paginação */}
+        <div className="flex justify-between items-center mt-16 pt-6 border-t border-dashed border-zinc-300 dark:border-green-900/50 text-xs font-bold uppercase font-mono">
+            {currentPage > 1 ? (
+                <Link href={`/?page=${currentPage - 1}`} className="hover:text-blue-600 dark:hover:text-green-400 flex items-center gap-1">
+                    &lt;&lt; PREV_PAGE
+                </Link>
+            ) : <span className="opacity-20 text-zinc-400 dark:text-green-900 cursor-not-allowed">&lt;&lt; NULL</span>}
+            
+            <span className="bg-black text-white dark:bg-green-900 dark:text-green-100 px-3 py-1">
+                PAGE_{currentPage}_OF_{totalPages}
             </span>
 
-            <div>
-                {hasNextPage ? (
-                    <Link 
-                        href={`/?page=${currentPage + 1}${searchQuery ? `&q=${searchQuery}` : ''}`}
-                        className="flex items-center gap-2 px-4 py-2 bg-black text-white dark:bg-white dark:text-black rounded hover:opacity-80 transition font-bold text-sm"
-                    >
-                        Next <ArrowRight size={16} />
-                    </Link>
-                ) : <div />}
-            </div>
+            {currentPage < totalPages ? (
+                <Link href={`/?page=${currentPage + 1}`} className="hover:text-blue-600 dark:hover:text-green-400 flex items-center gap-1">
+                    NEXT_PAGE &gt;&gt;
+                </Link>
+            ) : <span className="opacity-20 text-zinc-400 dark:text-green-900 cursor-not-allowed">NULL &gt;&gt;</span>}
         </div>
 
       </div>

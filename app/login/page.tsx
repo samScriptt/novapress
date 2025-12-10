@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { login, signup } from './actions'
-import { Loader2, Newspaper, Cpu, ArrowLeft } from 'lucide-react'
+import { Loader2, ArrowLeft, Terminal, Cpu, Globe, Activity } from 'lucide-react'
 import Link from 'next/link'
 
 export default function LoginPage() {
@@ -14,151 +14,166 @@ export default function LoginPage() {
     event.preventDefault()
     setLoading(true)
     setMsg('')
-
     const formData = new FormData(event.currentTarget)
     const res = isLogin ? await login(formData) : await signup(formData)
-
     if (res?.error) {
-        setMsg(res.error)
-        setLoading(false)
+      setMsg(res.error)
+      setLoading(false)
     }
   }
 
   return (
-    <main className="min-h-screen grid grid-cols-1 lg:grid-cols-2 bg-stone-50 dark:bg-stone-950">
+    <main className="min-h-screen grid grid-cols-1 lg:grid-cols-2 bg-zinc-50 dark:bg-[#050505] text-zinc-900 dark:text-zinc-200 transition-colors duration-300 font-sans">
       
-      {/* --- LADO VISUAL (ESQUERDA) --- */}
-      {/* Só aparece em telas grandes (lg) */}
-      <div className="relative hidden lg:flex flex-col justify-between p-16 bg-stone-900 text-white overflow-hidden h-full">
+      {/* --- LADO ESQUERDO: TECH EDITORIAL COVER --- */}
+      <div className="relative hidden lg:flex flex-col justify-between p-16 bg-zinc-900 text-white overflow-hidden">
         
-        {/* Background Imagem com Overlay */}
-        <div className="absolute inset-0 opacity-30 select-none pointer-events-none">
-            {/* Imagem de fundo genérica estilo jornal/tech */}
-            <div 
-                className="absolute inset-0 bg-cover bg-center filter grayscale contrast-125"
-                style={{ backgroundImage: "url('https://images.unsplash.com/photo-1504711434969-e33886168f5c?q=80&w=2070&auto=format&fit=crop')" }}
+        {/* Background Imagem Abstrata/Tech */}
+        <div className="absolute inset-0 z-0">
+             <div 
+                className="absolute inset-0 bg-cover bg-center opacity-50 mix-blend-overlay"
+                style={{ backgroundImage: "url('https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2072&auto=format&fit=crop')" }}
             ></div>
-            <div className="absolute inset-0 bg-gradient-to-t from-stone-900 via-stone-900/60 to-transparent"></div>
+            <div className="absolute inset-0 bg-gradient-to-t from-black via-zinc-900/40 to-black/80"></div>
+            
+            {/* Grid Decorativo Sutil */}
+            <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:60px_60px] pointer-events-none"></div>
         </div>
 
-        {/* Marca */}
-        <div className="relative z-10">
-            <Link href="/" className="inline-block group">
-                <h1 className="font-serif font-black text-5xl tracking-tighter flex items-center gap-2 group-hover:opacity-90 transition">
-                    NovaPress.
-                </h1>
-            </Link>
-        </div>
-
-        {/* Frase de Efeito (Estilo Depoimento/Manifesto) */}
-        <div className="relative z-10 max-w-lg">
-            <blockquote className="text-3xl font-serif leading-tight mb-6">
-                "Information never sleeps. The journalism of the future is autonomous, curated by AI, and delivered in real time."
-            </blockquote>
-            <div className="flex gap-6 text-stone-400 text-xs font-bold font-sans uppercase tracking-widest">
-                <div className="flex items-center gap-2"><Newspaper size={16} /> Curation 24/7</div>
-                <div className="flex items-center gap-2"><Cpu size={16} /> Powered by Gemini</div>
+        {/* Marca & Header Técnico */}
+        <div className="relative z-10 flex justify-between items-start">
+            <div className="flex items-center gap-3">
+                <div className="bg-white text-black p-1.5 rounded-sm">
+                    <Terminal size={20} />
+                </div>
+                <span className="font-serif font-black text-2xl tracking-tighter">NovaPress.</span>
+            </div>
+            
+            <div className="flex flex-col items-end text-[10px] font-mono text-zinc-400 uppercase tracking-widest">
+                <span className="flex items-center gap-2 text-green-400">
+                    <Activity size={10} className="animate-pulse" /> System_Online
+                </span>
+                <span>v.2.5.0-stable</span>
             </div>
         </div>
 
-        {/* Footer do Painel */}
-        <div className="relative z-10 text-xs text-stone-500 font-mono">
-            &copy; {new Date().getFullYear()} NovaPress Autonomous Media.
+        {/* Conteúdo Central */}
+        <div className="relative z-10 max-w-lg mt-auto mb-auto">
+            <div className="mb-6 inline-block border border-white/20 bg-white/5 backdrop-blur-sm px-3 py-1 rounded-full">
+                <span className="text-[10px] font-mono uppercase tracking-widest text-zinc-300">
+                    Autonomous Intelligence Stream
+                </span>
+            </div>
+            
+            <h2 className="font-serif text-5xl md:text-6xl font-medium leading-none mb-8 text-white">
+                Separating signal from noise in a <span className="italic text-zinc-400">complex world</span>.
+            </h2>
+            
+            <div className="pl-6 border-l-2 border-blue-500/80">
+                <p className="text-zinc-300 font-mono text-xs leading-relaxed max-w-sm uppercase tracking-wide">
+                    Powered by Gemini AI.<br/>
+                    Curated for the informed mind.
+                </p>
+            </div>
+        </div>
+
+        {/* Footer Técnico */}
+        <div className="relative z-10 border-t border-white/10 pt-6 flex justify-between text-[10px] font-mono text-zinc-500 uppercase tracking-wider">
+            <div className="flex gap-6">
+                <span>Secure_Connection_TLS</span>
+                <span>Latency: 12ms</span>
+            </div>
+            <div>
+                Data_Center: US_East
+            </div>
         </div>
       </div>
 
-      {/* --- LADO DO FORMULÁRIO (DIREITA) --- */}
-      <div className="flex items-center justify-center p-8 lg:p-24 text-stone-900 dark:text-stone-100 transition-colors relative">
+      {/* --- LADO DIREITO: FORMULÁRIO CLEAN --- */}
+      <div className="flex flex-col justify-center items-center p-8 lg:p-24 relative bg-white dark:bg-[#09090b]">
         
-        {/* Botão voltar flutuante mobile */}
-        <Link href="/" className="absolute top-8 left-8 lg:hidden text-stone-500 hover:text-black dark:hover:text-white">
-            <ArrowLeft size={24} />
+        <Link 
+          href="/" 
+          className="absolute top-8 left-8 flex items-center gap-2 text-[10px] font-mono font-bold uppercase tracking-widest text-zinc-400 hover:text-black dark:hover:text-white transition-colors group"
+        >
+            <ArrowLeft size={14} className="group-hover:-translate-x-1 transition-transform" />
+            Back_to_Feed
         </Link>
 
-        <div className="w-full max-w-sm space-y-10 animate-in fade-in slide-in-from-right-8 duration-700">
+        <div className="w-full max-w-[380px] animate-in fade-in slide-in-from-bottom-8 duration-700">
             
-            <div className="text-center lg:text-left space-y-2">
-                <h2 className="text-4xl font-black font-serif tracking-tight">
-                    {isLogin ? 'Welcome back' : 'Create your account'}
+            <div className="mb-10 text-center">
+                <div className="w-12 h-12 bg-zinc-100 dark:bg-zinc-900 rounded-sm flex items-center justify-center mx-auto mb-6 shadow-sm border border-zinc-200 dark:border-zinc-800">
+                    {isLogin ? <Cpu size={24} className="text-zinc-900 dark:text-zinc-200" strokeWidth={1.5} /> : <Globe size={24} className="text-zinc-900 dark:text-zinc-200" strokeWidth={1.5} />}
+                </div>
+                <h2 className="text-3xl font-serif font-black text-zinc-900 dark:text-white mb-3">
+                    {isLogin ? 'Subscriber Access' : 'Join the Network'}
                 </h2>
-                <p className="text-stone-500 text-sm font-sans">
-                    {isLogin ? 'Enter your credentials to access' : 'Join to us.'}
+                <p className="text-xs text-zinc-500 dark:text-zinc-400 font-mono uppercase tracking-wide">
+                    {isLogin ? 'Authenticate to unlock full content.' : 'Initialize your reader profile.'}
                 </p>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-5">
                 {!isLogin && (
                     <div className="space-y-1.5">
-                        <label className="text-xs font-bold uppercase tracking-wide text-stone-500 ml-1">Username</label>
+                        <label className="text-[10px] font-mono font-bold uppercase text-zinc-500 ml-1">Username_ID</label>
                         <input 
                             name="username" 
                             type="text" 
                             required 
-                            placeholder="@seunome"
-                            className="w-full p-4 rounded-lg bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 focus:ring-2 focus:ring-black dark:focus:ring-white focus:border-transparent outline-none transition-all placeholder:text-stone-400"
+                            placeholder="e.g. news_junkie"
+                            className="w-full px-4 py-3 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-sm text-sm focus:ring-1 focus:ring-black dark:focus:ring-white focus:border-black dark:focus:border-white outline-none transition-all placeholder:text-zinc-400 font-sans"
                         />
                     </div>
                 )}
                 
                 <div className="space-y-1.5">
-                    <label className="text-xs font-bold uppercase tracking-wide text-stone-500 ml-1">Email</label>
+                    <label className="text-[10px] font-mono font-bold uppercase text-zinc-500 ml-1">Email_Address</label>
                     <input 
                         name="email" 
                         type="email" 
                         required 
-                        placeholder="voce@exemplo.com"
-                        className="w-full p-4 rounded-lg bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 focus:ring-2 focus:ring-black dark:focus:ring-white focus:border-transparent outline-none transition-all placeholder:text-stone-400"
+                        placeholder="user@domain.com"
+                        className="w-full px-4 py-3 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-sm text-sm focus:ring-1 focus:ring-black dark:focus:ring-white focus:border-black dark:focus:border-white outline-none transition-all placeholder:text-zinc-400 font-sans"
                     />
                 </div>
 
                 <div className="space-y-1.5">
-                    <div className="flex justify-between items-center ml-1">
-                        <label className="text-xs font-bold uppercase tracking-wide text-stone-500">Password</label>
-                    </div>
+                    <label className="text-[10px] font-mono font-bold uppercase text-zinc-500 ml-1">Access_Key (Password)</label>
                     <input 
                         name="password" 
                         type="password" 
                         required 
                         minLength={6}
                         placeholder="••••••••"
-                        className="w-full p-4 rounded-lg bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 focus:ring-2 focus:ring-black dark:focus:ring-white focus:border-transparent outline-none transition-all placeholder:text-stone-400"
+                        className="w-full px-4 py-3 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-sm text-sm focus:ring-1 focus:ring-black dark:focus:ring-white focus:border-black dark:focus:border-white outline-none transition-all placeholder:text-zinc-400 font-sans"
                     />
                 </div>
 
                 {msg && (
-                    <div className="p-4 bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 text-sm rounded-lg border border-red-100 dark:border-red-900/50 flex items-center gap-2">
-                        <span className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0" />
-                        {msg}
+                    <div className="p-3 bg-red-50 dark:bg-red-950/20 text-red-600 dark:text-red-400 text-[10px] font-bold font-mono uppercase rounded-sm border border-red-100 dark:border-red-900/30 flex items-center gap-2">
+                        <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse"></span> SYSTEM ERROR: {msg}
                     </div>
                 )}
 
                 <button 
                     type="submit" 
                     disabled={loading}
-                    className="w-full bg-black dark:bg-white text-white dark:text-black font-bold py-4 rounded-lg hover:opacity-90 hover:-translate-y-0.5 active:translate-y-0 transition-all shadow-xl shadow-stone-200 dark:shadow-none flex justify-center items-center gap-2"
+                    className="w-full bg-black dark:bg-white text-white dark:text-black font-bold font-mono text-xs py-4 rounded-sm hover:opacity-90 active:scale-[0.99] transition-all shadow-lg shadow-zinc-200 dark:shadow-none flex justify-center items-center gap-2 uppercase tracking-widest border border-transparent hover:border-zinc-500"
                 >
-                    {loading && <Loader2 className="animate-spin" size={20} />}
-                    {isLogin ? 'Log in' : 'Create a Free Account'}
+                    {loading ? <Loader2 className="animate-spin" size={16} /> : (isLogin ? '>> Authenticate' : '>> Initialize_Account')}
                 </button>
             </form>
 
-            <div className="text-center space-y-4">
-                <div className="relative">
-                    <div className="absolute inset-0 flex items-center">
-                        <span className="w-full border-t border-stone-200 dark:border-stone-800" />
-                    </div>
-                    <div className="relative flex justify-center text-xs uppercase tracking-widest">
-                        <span className="bg-stone-50 dark:bg-stone-950 px-4 text-stone-400">Options</span>
-                    </div>
-                </div>
-
-                <p className="text-sm text-stone-600 dark:text-stone-400">
-                    {isLogin ? 'Not a subscriber yet?' : 'Are you already registered?'}
+            <div className="mt-8 pt-6 border-t border-zinc-100 dark:border-zinc-900 text-center">
+                <p className="text-xs text-zinc-500 font-sans">
+                    {isLogin ? "New to NovaPress?" : "Already verified?"}
                     <button 
                         onClick={() => { setIsLogin(!isLogin); setMsg(''); }}
-                        className="ml-2 font-bold text-black dark:text-white hover:underline underline-offset-4 decoration-2"
+                        className="ml-1.5 font-bold text-black dark:text-white hover:underline underline-offset-4 decoration-zinc-400"
                     >
-                        {isLogin ? 'Register' : 'Login'}
+                        {isLogin ? 'Sign up' : 'Sign in'}
                     </button>
                 </p>
             </div>

@@ -1,21 +1,60 @@
 @import "tailwindcss";
 
-/* 👇 O segredo para o Modo Escuro manual no Tailwind v4 👇 */
 @variant dark (&:where(.dark, .dark *));
 
 @theme {
   --font-sans: var(--font-inter);
-  --font-serif: var(--font-playfair);
+  --font-mono: var(--font-mono);
   
-  --color-stone-50: #fafaf9;
-  --color-stone-900: #1c1917;
-  --color-stone-950: #0c0a09;
+  /* Cores Cyberpunk / Terminal */
+  --color-zinc-950: #09090b;
+  --color-matrix-bg: #050505;
+  --color-matrix-text: #4ade80; /* Green-400 */
+  --color-matrix-dim: #15803d; /* Green-700 */
 }
 
 body {
-  font-family: var(--font-sans);
+  font-family: var(--font-mono); /* Tudo Monoespaçado agora */
 }
 
-h1, h2, h3, h4, h5, h6 {
-  font-family: var(--font-serif);
+/* Scrollbar Hacker */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #000;
+}
+::-webkit-scrollbar-thumb {
+  background: #333;
+  border: 1px solid #000;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #4ade80;
+}
+
+/* Animação de Cursor Piscando */
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+.cursor-blink::after {
+  content: '▋';
+  margin-left: 2px;
+  animation: blink 1s step-end infinite;
+  color: currentColor;
+}
+
+/* Efeito de Scanline (Opcional, sutil) */
+.scanlines::before {
+  content: " ";
+  display: block;
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+  z-index: 999;
+  background-size: 100% 2px, 3px 100%;
+  pointer-events: none;
 }

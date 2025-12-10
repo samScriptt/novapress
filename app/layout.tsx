@@ -1,15 +1,15 @@
 import type { Metadata } from "next";
-import { Inter, Playfair_Display } from "next/font/google";
+import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
-import { Footer } from "@/components/Footer"; // Importe o Footer
+import { Footer } from "@/components/Footer";
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
-const playfair = Playfair_Display({ subsets: ["latin"], variable: "--font-playfair" });
+const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
+const mono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-mono" });
 
 export const metadata: Metadata = {
-  title: "NovaPress",
-  description: "Jornalismo Autônomo via IA",
+  title: "NovaPress_ | AI Neural Stream",
+  description: "Autonomous intelligence curation system.",
 };
 
 export default function RootLayout({
@@ -19,10 +19,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${inter.variable} ${playfair.variable} antialiased bg-stone-50 text-stone-900 dark:bg-stone-950 dark:text-stone-100 transition-colors duration-300 flex flex-col min-h-screen`}>
+      <body className={`${inter.variable} ${mono.variable} antialiased bg-zinc-50 text-zinc-900 dark:bg-black dark:text-green-500 transition-colors duration-300 flex flex-col min-h-screen text-sm selection:bg-green-500 selection:text-black`}>
         <Providers>
           {children}
-          <Footer /> {/* Adicionado aqui, dentro do Provider mas fora do children da página */}
+          <Footer />
         </Providers>
       </body>
     </html>

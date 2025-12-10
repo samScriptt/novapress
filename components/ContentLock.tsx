@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 
 interface ContentLockProps {
   isLoggedIn: boolean;
-  isLimitReached?: boolean; // Novo prop
+  isLimitReached?: boolean;
 }
 
 export function ContentLock({ isLoggedIn, isLimitReached = false }: ContentLockProps) {
@@ -18,60 +18,54 @@ export function ContentLock({ isLoggedIn, isLimitReached = false }: ContentLockP
       router.push("/login");
       return;
     }
-
     setLoading(true);
     try {
       const res = await fetch('/api/stripe/checkout', { method: 'POST' });
       const data = await res.json();
       if (data.url) window.location.href = data.url;
     } catch (error) {
-      alert("Error at payment start.");
+      alert("System Error: Payment gateway unreachable.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="absolute inset-0 z-10 flex flex-col items-center justify-end pb-20 bg-gradient-to-t from-stone-50 via-stone-50/95 to-transparent dark:from-stone-950 dark:via-stone-950/95 h-full">
-      <div className="bg-white dark:bg-stone-900 p-8 rounded-2xl shadow-2xl text-center max-w-md border border-stone-200 dark:border-stone-800 transform translate-y-10">
+    <div className="absolute inset-0 z-10 flex flex-col items-center justify-end pb-20 bg-gradient-to-t from-zinc-50 via-zinc-50/95 to-transparent dark:from-black dark:via-black/95 h-full">
+      <div className="bg-white dark:bg-[#0a0a0a] p-8 max-w-md w-full border border-zinc-200 dark:border-green-900 shadow-[0_0_30px_rgba(0,0,0,0.2)] dark:shadow-[0_0_30px_rgba(21,128,61,0.1)] transform translate-y-10 text-center font-mono">
         
-        {/* Ícone muda dependendo do estado */}
-        <div className="w-12 h-12 bg-black dark:bg-white text-white dark:text-black rounded-full flex items-center justify-center mx-auto mb-4">
-          {isLimitReached ? <Sparkles size={20} /> : <Lock size={20} />}
+        <div className="w-16 h-16 bg-black dark:bg-green-900/20 text-white dark:text-green-500 rounded-sm flex items-center justify-center mx-auto mb-6 border border-transparent dark:border-green-700">
+          {isLimitReached ? <Sparkles size={24} /> : <Lock size={24} />}
         </div>
 
-        <h3 className="text-2xl font-serif font-black mb-2 text-stone-900 dark:text-white">
-          {isLimitReached ? "Daily Limit Reached" : "Exclusive Content"}
+        <h3 className="text-xl font-bold uppercase tracking-widest mb-4 text-black dark:text-green-400">
+          {isLimitReached ? "DAILY_LIMIT_REACHED" : "ENCRYPTED_CONTENT"}
         </h3>
         
-        <p className="text-stone-500 mb-6 font-sans text-sm">
+        <p className="text-zinc-500 dark:text-green-800/80 mb-8 text-xs leading-relaxed">
           {isLimitReached 
-            ? "You've already read your free news article for today. Subscribe to continue reading without limits."
-            : "Create a free account to read 1 news article per day or subscribe for unlimited access."
+            ? "Free tier bandwidth exceeded. Upgrade to Premium Node for unlimited data stream access."
+            : "Secure content detected. Authenticate or upgrade clearance level to decrypt full data."
           }
         </p>
         
-        <div className="mb-6 flex justify-center items-baseline gap-1">
-            <span className="text-3xl font-black text-black dark:text-white">$1</span>
-            <span className="text-stone-500">/month</span>
+        <div className="mb-8 flex justify-center items-baseline gap-1 border-y border-zinc-100 dark:border-green-900/30 py-4">
+            <span className="text-4xl font-black text-black dark:text-white">$1</span>
+            <span className="text-zinc-400 dark:text-green-700 text-xs uppercase">/month</span>
         </div>
 
         <button 
           onClick={handleSubscribe}
           disabled={loading}
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition-colors flex items-center justify-center gap-2"
+          className="w-full bg-blue-600 hover:bg-blue-700 dark:bg-green-600 dark:hover:bg-green-500 text-white dark:text-black font-bold py-3 uppercase tracking-widest transition-all hover:shadow-lg flex items-center justify-center gap-3 disabled:opacity-50"
         >
-          {loading ? "Processing..." : (
+          {loading ? "PROCESSING..." : (
             <>
-                <CreditCard size={18} />
-                {isLoggedIn ? "Unlock Everything" : "Sign in to subscribe"}
+                <CreditCard size={16} />
+                {isLoggedIn ? "UNLOCK_ACCESS" : "LOGIN_TO_SUBSCRIBE"}
             </>
           )}
         </button>
-        
-        <p className="mt-4 text-xs text-stone-400">
-          Cancel anytime.
-        </p>
       </div>
     </div>
   );

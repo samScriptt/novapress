@@ -1,14 +1,14 @@
 import { createClient } from '@/utils/supabase/server';
-import { format } from 'date-fns';
-import { enUS } from 'date-fns/locale';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { PostInteractions } from '@/components/PostInteractions';
 import { LikeDislike } from '@/components/LikeDislike';
 import { Comments } from '@/components/Comments';
-import { Clock } from 'lucide-react';
 import { ContentLock } from '@/components/ContentLock';
-import { logSystemEvent } from '@/app/monitoring/actions'; 
+import { Typewriter } from '@/components/Typewriter'; 
+import { Header } from '@/components/Header';
+import { formatDistanceToNow } from 'date-fns';
+import { Clock, ArrowLeft, Hash } from 'lucide-react';
 
 export const revalidate = 0;
 
@@ -24,13 +24,7 @@ export default async function PostPage({ params }: PageProps) {
   const { data: post } = await supabase.from('posts').select('*').eq('id', id).single();
   if (!post) notFound();
 
-  await logSystemEvent('view_post', { 
-    post_id: id, 
-    post_title: post.title,
-    category: post.category 
-  });
-
-  // 2. Verificar Usuário e Assinatura
+  // 2. Verificar Usuário e Assinatura (Sua lógica de negócio)
   const { data: { user } } = await supabase.auth.getUser();
   const isLoggedIn = !!user;
   
@@ -39,7 +33,6 @@ export default async function PostPage({ params }: PageProps) {
   let hasAccess = false;
 
   if (user) {
-    // Busca perfil
     const { data: profile } = await supabase
         .from('profiles')
         .select('is_subscriber, last_free_view_date, last_free_view_post_id')
@@ -49,159 +42,150 @@ export default async function PostPage({ params }: PageProps) {
     isSubscriber = !!profile?.is_subscriber;
 
     if (isSubscriber) {
-        // Cenário 1: Assinante (Acesso Total)
         hasAccess = true;
     } else {
-        // Cenário 2: Usuário Grátis (Lógica de 1 por dia)
-        const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
-        const lastViewDate = profile?.last_free_view_date; // Assumindo formato YYYY-MM-DD do banco
+        const today = new Date().toISOString().split('T')[0];
+        const lastViewDate = profile?.last_free_view_date;
         const lastViewId = profile?.last_free_view_post_id;
 
         if (lastViewDate !== today) {
-            // Novo dia: Reseta e permite este post
             hasAccess = true;
-            // Atualiza o banco (Side effect permitido em Server Components para analytics simples)
-            await supabase.from('profiles').update({
-                last_free_view_date: today,
-                last_free_view_post_id: id
-            }).eq('id', user.id);
+            await supabase.from('profiles').update({ last_free_view_date: today, last_free_view_post_id: id }).eq('id', user.id);
         } else {
-            // Mesmo dia
-            if (String(lastViewId) === String(id)) {
-                // Revisitando o MESMO post de hoje: Permitir
-                hasAccess = true;
-            } else {
-                // Tentando ver OUTRO post: Bloquear
+            if (String(lastViewId) === String(id)) hasAccess = true;
+            else {
                 hasAccess = false;
                 isDailyLimitReached = true;
             }
         }
     }
   } else {
-    // Cenário 3: Visitante (Sem Acesso)
     hasAccess = false;
   }
 
-  // ... (Queries de likes e comments mantêm-se iguais) ...
+  // 3. Likes e Comentários
   const { count: likeCount } = await supabase.from('likes').select('*', { count: 'exact', head: true }).eq('post_id', id).eq('vote_type', 'like');
   const { count: dislikeCount } = await supabase.from('likes').select('*', { count: 'exact', head: true }).eq('post_id', id).eq('vote_type', 'dislike');
-  
   let userVote = null;
   if (user) {
     const { data: vote } = await supabase.from('likes').select('vote_type').eq('post_id', id).eq('user_id', user.id).single();
     userVote = vote?.vote_type || null;
   }
-
   const { data: comments } = await supabase.from('comments').select('*, profiles(username)').eq('post_id', id).order('created_at', { ascending: false });
+  
   const words = post.content.split(/\s+/).length;
   const readTime = Math.ceil(words / 200);
 
   return (
-    <article className="min-h-screen bg-stone-50 text-stone-900 dark:bg-stone-950 dark:text-stone-100 selection:bg-black selection:text-white dark:selection:bg-white dark:selection:text-black transition-colors duration-500">
-      
-      {/* Navbar */}
-      <nav className="border-b border-gray-200 dark:border-stone-800 bg-white/80 dark:bg-stone-950/80 py-4 sticky top-0 z-20 backdrop-blur-md transition-all">
-        <div className="container mx-auto px-4 max-w-4xl flex justify-between items-center">
-          <Link href="/" className="font-serif font-black text-2xl tracking-tighter hover:text-blue-700 dark:hover:text-blue-400 transition">
-            NovaPress.
-          </Link>
-          <Link href="/" className="text-xs font-bold uppercase tracking-widest text-gray-500 hover:text-black dark:hover:text-white">
-            ← Back
-          </Link>
-        </div>
-      </nav>
+    <article className="min-h-screen bg-zinc-50 dark:bg-black text-zinc-900 dark:text-green-400 pt-20 selection:bg-green-500 selection:text-black font-mono">
+      <Header />
 
-      <div className="container mx-auto px-4 max-w-4xl py-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <div className="container mx-auto px-4 max-w-3xl py-8">
+        
+        <div className="mb-8 border-b border-dashed border-zinc-300 dark:border-green-900/50 pb-8">
+            <Link href="/" className="inline-flex items-center gap-2 text-xs uppercase tracking-widest text-zinc-400 dark:text-green-700 hover:text-black dark:hover:text-green-400 mb-6 transition-colors">
+                <ArrowLeft size={14} /> Back_to_Feed
+            </Link>
 
-        {/* Header do Post */}
-        <div className="flex flex-wrap items-center gap-3 text-sm text-gray-500 dark:text-gray-400 font-sans mb-6">
-          <span className="uppercase tracking-wider font-bold text-blue-700 dark:text-blue-400">
-            {post.category || 'General'}
-          </span>
-          <span>•</span>
-          <span>{format(new Date(post.created_at), "MMMM d, yyyy", { locale: enUS })}</span>
-          <span>•</span>
-          <span className="flex items-center gap-1"><Clock size={14} /> {readTime} min read</span>
-        </div>
-
-        <h1 className="text-4xl md:text-5xl lg:text-6xl font-serif font-extrabold leading-tight text-black dark:text-white mb-8">
-          {post.title}
-        </h1>
-
-        {/* Barra de Ações */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 border-y border-gray-200 dark:border-stone-800 py-6 mb-12">
-            <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-full bg-black dark:bg-white flex items-center justify-center text-white dark:text-black font-bold shadow-md">
-                    AI
-                </div>
-                <div>
-                    <p className="font-bold text-gray-900 dark:text-white">Gemini 2.5</p>
-                    <p className="text-gray-500 text-sm">Autonomous Editor</p>
-                </div>
+            {/* Meta Dados */}
+            <div className="flex flex-wrap items-center gap-4 text-[10px] uppercase tracking-widest text-zinc-400 dark:text-green-800/80 font-bold mb-4">
+                <span className="text-blue-600 dark:text-green-500 bg-blue-50 dark:bg-green-900/20 px-2 py-1 rounded">
+                    {post.category || 'DATA_STREAM'}
+                </span>
+                <span>//</span>
+                <span>{formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}</span>
+                <span>//</span>
+                <span className="flex items-center gap-1"><Clock size={10} /> {readTime}MIN_READ</span>
             </div>
 
-            {/* Like disponível apenas se assinante */}
-            {isSubscriber ? (
-                <LikeDislike 
-                    postId={post.id} 
-                    initialLikes={likeCount || 0} 
-                    initialDislikes={dislikeCount || 0}
-                    userVote={userVote}
-                    isLoggedIn={true}
-                />
-            ) : (
-                <div className="text-xs text-stone-400 font-serif italic">Sign up to vote</div>
-            )}
+            {/* Título Typewriter */}
+            <h1 className="text-3xl md:text-5xl font-black leading-tight mb-8 text-black dark:text-green-500">
+                <Typewriter text={post.title} speed={20} cursor={true} />
+            </h1>
+
+            {/* Autor e Status */}
+            <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-black dark:bg-green-900/30 border border-green-500/50 text-white dark:text-green-400 flex items-center justify-center font-bold text-xs">AI</div>
+                    <div className="text-xs uppercase leading-tight">
+                        <p className="font-bold text-black dark:text-green-300">Gemini_Unit_2.5</p>
+                        <p className="text-zinc-400 dark:text-green-800">Automated_Editor</p>
+                    </div>
+                </div>
+            </div>
         </div>
 
-        {/* Imagem */}
+        {/* IMAGEM DA NOTÍCIA (Grande e Colorida) */}
         {post.image_url && (
-          <figure className="mb-14 group">
-            <div className="overflow-hidden rounded-xl shadow-lg">
-              <img src={post.image_url} alt={post.title} className="w-full h-auto object-cover transition-transform duration-700 group-hover:scale-105" />
+            <div className="mb-12 border border-zinc-200 dark:border-green-900/50 p-1 bg-white dark:bg-green-900/5 rounded-sm">
+                <div className="aspect-video relative overflow-hidden">
+                    <img 
+                        src={post.image_url} 
+                        alt={post.title} 
+                        className="w-full h-full object-cover transition-transform duration-700 hover:scale-[1.02]" 
+                    />
+                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
+                        <p className="text-[10px] text-zinc-400 font-mono uppercase tracking-widest">Source_Visual_Data</p>
+                    </div>
+                </div>
             </div>
-            <figcaption className="text-center text-xs text-gray-400 mt-2 font-sans">
-              Image source: News Aggregator
-            </figcaption>
-          </figure>
         )}
 
         {/* ÁREA DE CONTEÚDO */}
-        <div className="relative">
+        <div className="relative group">
             <div 
                 className={`
-                    prose prose-lg md:prose-xl max-w-none font-serif text-gray-800 dark:text-gray-300 leading-relaxed
-                    prose-headings:font-bold prose-headings:text-black dark:prose-headings:text-white
-                    prose-a:text-blue-600 dark:prose-a:text-blue-400
-                    [&>h1]:mt-12 [&>h2]:mt-10 [&>p]:mb-6
-                    ${!hasAccess ? 'blur-md select-none pointer-events-none max-h-80 overflow-hidden' : ''} 
+                    prose prose-sm md:prose-lg max-w-none 
+                    font-mono text-zinc-800 dark:text-green-300/90 leading-relaxed
+                    prose-headings:font-bold prose-headings:uppercase prose-headings:text-black dark:prose-headings:text-green-400
+                    prose-a:text-blue-600 dark:prose-a:text-green-500 dark:prose-a:underline
+                    prose-blockquote:border-l-4 prose-blockquote:border-green-500 prose-blockquote:bg-green-900/10 prose-blockquote:text-green-200 prose-blockquote:not-italic prose-blockquote:py-2 prose-blockquote:px-4
+                    animate-in fade-in slide-in-from-bottom-8 duration-1000
+                    ${!hasAccess ? 'blur-sm select-none pointer-events-none max-h-96 overflow-hidden opacity-50' : ''} 
                 `}
                 dangerouslySetInnerHTML={{ __html: post.content }} 
             />
             
-            {/* Paywall Overlay */}
+            {/* Paywall */}
             {!hasAccess && (
                 <ContentLock 
                     isLoggedIn={isLoggedIn} 
                     isLimitReached={isDailyLimitReached} 
                 />
             )}
+
+            {hasAccess && (
+                <div className="mt-12 mb-8 text-center text-xs text-zinc-300 dark:text-green-900 uppercase tracking-[0.5em] animate-pulse">
+                    *** END OF TRANSMISSION ***
+                </div>
+            )}
         </div>
 
-        {/* Rodapé do Post */}
-        <div className={!hasAccess ? 'hidden' : 'mt-10'}>
-            <div className="mb-16">
-                <h3 className="font-sans font-bold text-sm uppercase tracking-wide text-gray-500 mb-4">Share this story</h3>
-                <PostInteractions title={post.title} />
+        {/* Interações */}
+        <div className={!hasAccess ? 'hidden' : 'mt-12'}>
+            <div className="flex flex-col md:flex-row justify-between items-center gap-6 p-6 bg-zinc-100 dark:bg-green-900/10 border border-zinc-200 dark:border-green-900/30 rounded-sm mb-12">
+                <div className="flex items-center gap-4">
+                    <LikeDislike 
+                        postId={post.id} 
+                        initialLikes={likeCount || 0} 
+                        initialDislikes={dislikeCount || 0}
+                        userVote={userVote}
+                        isLoggedIn={true} // Se chegou aqui, tem acesso
+                    />
+                </div>
+                <div className="w-full md:w-auto">
+                    <h3 className="font-mono font-bold text-xs uppercase tracking-wide text-zinc-500 dark:text-green-700 mb-2 flex items-center gap-2">
+                        <Hash size={12} /> Share_Protocol
+                    </h3>
+                    <PostInteractions title={post.title} />
+                </div>
             </div>
-
-            <hr className="border-gray-300 dark:border-stone-800" />
 
             <Comments 
                 postId={post.id} 
                 comments={comments || []} 
                 isLoggedIn={isLoggedIn}
-                isSubscriber={isSubscriber} // Passa o status real
+                isSubscriber={isSubscriber}
             />
         </div>
 
