@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { Header } from '@/components/Header'; // Usando o novo Header animado
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { enUS } from 'date-fns/locale'; // Use enUS
+import { TopicVoting } from '@/components/TopicVoting'; // Importe
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -153,6 +154,11 @@ export default async function Home({ searchParams }: HomeProps) {
         </div>
 
       </div>
+
+      <div className="container mx-auto px-4 pb-12">
+        <TopicVoting />
+      </div>
+
     </main>
   );
 }

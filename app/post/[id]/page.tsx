@@ -8,6 +8,7 @@ import { LikeDislike } from '@/components/LikeDislike';
 import { Comments } from '@/components/Comments';
 import { Clock } from 'lucide-react';
 import { ContentLock } from '@/components/ContentLock';
+import { logSystemEvent } from '@/app/monitoring/actions'; 
 
 export const revalidate = 0;
 
@@ -22,6 +23,12 @@ export default async function PostPage({ params }: PageProps) {
   // 1. Buscar Notícia
   const { data: post } = await supabase.from('posts').select('*').eq('id', id).single();
   if (!post) notFound();
+
+  await logSystemEvent('view_post', { 
+    post_id: id, 
+    post_title: post.title,
+    category: post.category 
+  });
 
   // 2. Verificar Usuário e Assinatura
   const { data: { user } } = await supabase.auth.getUser();

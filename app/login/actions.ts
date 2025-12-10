@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/utils/supabase/server'
+import { logSystemEvent } from '@/app/monitoring/actions';
 
 // Strong password validation
 function validatePassword(password: string): string | null {
@@ -38,6 +39,10 @@ export async function login(formData: FormData) {
         return { error: 'Incorrect email or password.' }
     }
     return { error: error.message }
+  } else {
+    await logSystemEvent('login', { method: 'password' });
+    revalidatePath('/', 'layout')
+    redirect('/')
   }
 
   revalidatePath('/', 'layout')
