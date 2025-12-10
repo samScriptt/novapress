@@ -173,41 +173,52 @@ export async function GET(req: NextRequest) {
 
     // --- 4. POSTAR NO TWITTER ---
     try {
-        const link = `${process.env.SITE_URL || 'https://novapress.vercel.app'}/post/${savedPost.id}`;
-        
-        // Hashtags Dinâmicas
-        const dynamicHashtags = aiResponse.tags
-            .map((t: string) => `#${t.replace(/\s+/g, '')}`)
-            .join(' ');
+      const link = `${process.env.SITE_URL || 'https://novapress.vercel.app'}/post/${savedPost.id}`;
 
-        const tweetText = `${finalSummary}\n\n👇 Read full story:\n${link}\n\n${dynamicHashtags} #NovaPress`;
-        
-        let mediaId = null;
+      // Texto do tweet SEM hashtags dinâmicas
+      function buildSafeTweet(summary: string, link: string) {
+        const suffix = `\n\n👇 Read full story:\n${link}\n\n#NovaPress`;
+        const maxSummaryLength = 280 - suffix.length;
 
-        // Reusa o buffer que já baixamos para o Storage (economiza banda)
-        if (imageBuffer) {
-            try {
-                // Upload para Twitter (v1.1)
-                mediaId = await twitterClient.v1.uploadMedia(imageBuffer, { mimeType: imageMimeType });
-            } catch (twImgErr) {
-                console.error('Erro upload imagem Twitter:', twImgErr);
-            }
-        }
+        const safeSummary =
+          summary.length > maxSummaryLength
+            ? summary.slice(0, maxSummaryLength - 3) + '...'
+            : summary;
 
-        if (mediaId) {
-            await twitterClient.v2.tweet({
-                text: tweetText,
-                media: { media_ids: [mediaId] }
-            });
-        } else {
-            await twitterClient.v2.tweet(tweetText);
-        }
+        return safeSummary + suffix;
+      }
 
-        console.log('🐦 Tweet enviado!');
+      const tweetText = buildSafeTweet(finalSummary, link);
 
-    } catch(e: any) { 
-        console.error('Twitter fail:', e); 
-    }
+      let mediaId: string | null = null;
+
+      // Reusa o buffer que já baixamos para o Storage (economiza banda)
+      if (imageBuffer) {
+          try {
+              mediaId = await twitterClient.v1.uploadMedia(imageBuffer, {
+                  mimeType: imageMimeType
+              });
+          } catch (twImgErr) {
+              console.error('Erro upload imagem Twitter:', twImgErr);
+          }
+      }
+
+      if (mediaId) {
+          await twitterClient.v2.tweet({
+              text: tweetText,
+              media: { media_ids: [mediaId] }
+          });
+      } else {
+          await twitterClient.v2.tweet({
+              text: tweetText
+          });
+      }
+
+      console.log('🐦 Tweet enviado!');
+  } catch (e: any) {
+      console.error('Twitter fail:', e?.data || e);
+  }
+
 
     return NextResponse.json({ 
       success: true, 
