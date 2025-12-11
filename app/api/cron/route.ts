@@ -27,6 +27,15 @@ export const dynamic = 'force-dynamic';
 const DYNAMIC_SECTIONS = ['technology', 'business', 'science', 'general'];
 
 export async function GET(req: NextRequest) {
+
+  const authHeader = req.headers.get('authorization');
+  const urlKey = req.nextUrl.searchParams.get('key');
+  const CRON_SECRET = process.env.CRON_SECRET;
+
+  if (urlKey !== CRON_SECRET && authHeader !== `Bearer ${CRON_SECRET}`) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   try {
     const currentSection = DYNAMIC_SECTIONS[Math.floor(Math.random() * DYNAMIC_SECTIONS.length)];
     console.log(`🔄 NovaPress Cron: Scouting for trends in [${currentSection}]...`);
