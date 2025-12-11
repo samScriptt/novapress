@@ -19,7 +19,7 @@ export function Footer() {
           
           {/* Column 1: Brand */}
           <div>
-            <h3 className="font-serif font-black text-2xl mb-4 text-black dark:text-white tracking-tighter">
+            <h3 className="font-black text-2xl mb-4 text-black dark:text-white tracking-tighter">
               NovaPress.
             </h3>
             <p className="text-stone-500 text-sm leading-relaxed max-w-xs">

@@ -48,7 +48,7 @@ export default function LoginPage() {
                 <div className="bg-white text-black p-1.5 rounded-sm">
                     <Terminal size={20} />
                 </div>
-                <span className="font-serif font-black text-2xl tracking-tighter">NovaPress.</span>
+                <span className="font-black text-2xl tracking-tighter">NovaPress.</span>
             </div>
             
             <div className="flex flex-col items-end text-[10px] font-mono text-zinc-400 uppercase tracking-widest">
@@ -67,7 +67,7 @@ export default function LoginPage() {
                 </span>
             </div>
             
-            <h2 className="font-serif text-5xl md:text-6xl font-medium leading-none mb-8 text-white">
+            <h2 className="text-5xl md:text-6xl font-medium leading-none mb-8 text-white">
                 When data speaks, we listen.
             </h2>
             
@@ -104,7 +104,7 @@ export default function LoginPage() {
                 <div className="w-12 h-12 bg-zinc-100 dark:bg-zinc-900 rounded-sm flex items-center justify-center mx-auto mb-6 shadow-sm border border-zinc-200 dark:border-zinc-800">
                     {isLogin ? <Cpu size={24} className="text-zinc-900 dark:text-zinc-200" strokeWidth={1.5} /> : <Globe size={24} className="text-zinc-900 dark:text-zinc-200" strokeWidth={1.5} />}
                 </div>
-                <h2 className="text-3xl font-serif font-black text-zinc-900 dark:text-white mb-3">
+                <h2 className="text-3xl ont-black text-zinc-900 dark:text-white mb-3">
                     {isLogin ? 'Subscriber Access' : 'Join the Network'}
                 </h2>
                 <p className="text-xs text-zinc-500 dark:text-zinc-400 font-mono uppercase tracking-wide">
