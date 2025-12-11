@@ -123,7 +123,7 @@ export default async function PostPage({ params }: PageProps) {
             </div>
 
             <h1 className="text-3xl md:text-5xl font-black leading-tight mb-8 text-black dark:text-green-500">
-                <Typewriter text={post.title} speed={20} cursor={true} />
+                <Typewriter text={post.title} speed={20} cursor={false} />
             </h1>
 
             <div className="flex items-center justify-between">

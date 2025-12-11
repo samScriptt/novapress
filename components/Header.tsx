@@ -29,7 +29,7 @@ export function Header() {
           <Link href="/" className="flex items-center gap-2 group text-black dark:text-green-500">
             <Terminal size={18} />
             <div className="font-mono font-bold tracking-tighter text-lg uppercase min-w-[100px]">
-              NovaPress
+              <Typewriter text={'NOVAPRESS'} speed={60} cursor={true} />
             </div>
           </Link>
 

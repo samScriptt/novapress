@@ -12,16 +12,20 @@ export function Typewriter({ text, speed = 30, className, cursor = true }: Typew
   const [displayedText, setDisplayedText] = useState("");
 
   useEffect(() => {
+    // Reseta sempre que o texto mudar
     setDisplayedText(""); 
-    let i = 0;
     
     const timer = setInterval(() => {
-      if (i < text.length) {
-        setDisplayedText((prev) => prev + text.charAt(i));
-        i++;
-      } else {
-        clearInterval(timer);
-      }
+      setDisplayedText((prev) => {
+        // Se já escreveu tudo, limpa o intervalo
+        if (prev.length >= text.length) {
+          clearInterval(timer);
+          return prev;
+        }
+        // Pega do início até o próximo caractere (prev.length + 1)
+        // Isso é mais seguro que somar charAt(i) pois se baseia no estado atual
+        return text.slice(0, prev.length + 1);
+      });
     }, speed);
 
     return () => clearInterval(timer);
