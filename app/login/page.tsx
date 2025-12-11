@@ -4,11 +4,13 @@ import { useState } from 'react'
 import { login, signup } from './actions'
 import { Loader2, ArrowLeft, Terminal, Cpu, Globe, Activity } from 'lucide-react'
 import Link from 'next/link'
+import { Eye, EyeOff } from 'lucide-react' // <-- adicione isso no topo
 
 export default function LoginPage() {
   const [isLogin, setIsLogin] = useState(true)
   const [loading, setLoading] = useState(false)
   const [msg, setMsg] = useState('')
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -136,16 +138,29 @@ export default function LoginPage() {
                 </div>
 
                 <div className="space-y-1.5">
-                    <label className="text-[10px] font-mono font-bold uppercase text-zinc-500 ml-1">Access_Key (Password)</label>
-                    <input 
-                        name="password" 
-                        type="password" 
-                        required 
+                    <label className="text-[10px] font-mono font-bold uppercase text-zinc-500 ml-1">
+                        Access_Key (Password)
+                    </label>
+
+                    <div className="relative">
+                        <input
+                        name="password"
+                        type={showPassword ? "text" : "password"}
+                        required
                         minLength={6}
                         placeholder="••••••••"
-                        className="w-full px-4 py-3 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-sm text-sm focus:ring-1 focus:ring-black dark:focus:ring-white focus:border-black dark:focus:border-white outline-none transition-all placeholder:text-zinc-400 font-sans"
-                    />
-                </div>
+                        className="w-full px-4 py-3 pr-10 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-sm text-sm focus:ring-1 focus:ring-black dark:focus:ring-white focus:border-black dark:focus:border-white outline-none transition-all placeholder:text-zinc-400 font-sans"
+                        />
+
+                        <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 dark:text-zinc-400 hover:text-black dark:hover:text-white transition"
+                        >
+                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                        </button>
+                    </div>
+                    </div>
 
                 {msg && (
                     <div className="p-3 bg-red-50 dark:bg-red-950/20 text-red-600 dark:text-red-400 text-[10px] font-bold font-mono uppercase rounded-sm border border-red-100 dark:border-red-900/30 flex items-center gap-2">
