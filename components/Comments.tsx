@@ -2,10 +2,9 @@
 
 import { addComment } from "@/app/post/[id]/actions";
 import { User, SendHorizontal, Lock } from "lucide-react";
-import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
 import { enUS } from "date-fns/locale";
-import { useRef, useTransition } from "react";
+import { useRef, useTransition, useState } from "react";
 import { useRouter } from "next/navigation";
 
 interface Comment {
@@ -26,6 +25,7 @@ export function Comments({ postId, comments, isLoggedIn, isSubscriber }: Props) 
   const formRef = useRef<HTMLFormElement>(null);
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  const [loadingSubscription, setLoadingSubscription] = useState(false);
 
   const handleSubmit = async (formData: FormData) => {
     startTransition(async () => {
@@ -33,6 +33,25 @@ export function Comments({ postId, comments, isLoggedIn, isSubscriber }: Props) 
       formRef.current?.reset();
       router.refresh();
     });
+  };
+
+  // ⭐ Mesma lógica do ContentLock
+  const handleUpgrade = async () => {
+    if (!isLoggedIn) {
+      router.push("/login");
+      return;
+    }
+
+    setLoadingSubscription(true);
+    try {
+      const res = await fetch("/api/stripe/checkout", { method: "POST" });
+      const data = await res.json();
+      if (data.url) window.location.href = data.url;
+    } catch (err) {
+      alert("System Error: Payment gateway unreachable.");
+    } finally {
+      setLoadingSubscription(false);
+    }
   };
 
   return (
@@ -89,12 +108,18 @@ export function Comments({ postId, comments, isLoggedIn, isSubscriber }: Props) 
               : "Join the discussion."}
           </p>
 
-          <Link
-            href={isLoggedIn ? "/#subscribe" : "/login"}
-            className="inline-block bg-black dark:bg-white text-white dark:text-black px-6 py-2 rounded-full font-bold text-sm hover:opacity-80 transition"
+          {/* ⭐ Botão corrigido (igual ao ContentLock) */}
+          <button
+            onClick={handleUpgrade}
+            disabled={loadingSubscription}
+            className="inline-block bg-black dark:bg-white text-white dark:text-black px-6 py-2 rounded-full font-bold text-sm hover:opacity-80 transition disabled:opacity-50"
           >
-            {isLoggedIn ? "Upgrade Plan" : "Login / Sign Up"}
-          </Link>
+            {loadingSubscription
+              ? "PROCESSING..."
+              : isLoggedIn
+              ? "Upgrade Plan"
+              : "Login / Sign Up"}
+          </button>
         </div>
       )}
 
