@@ -57,7 +57,6 @@ export function Footer() {
 
         <div className="border-t border-stone-200 dark:border-stone-800 pt-8 flex flex-col md:flex-row justify-between items-center text-xs text-stone-500">
           <p>&copy; {currentYear} NovaPress AI. All rights reserved.</p>
-          <p>Powered by Next.js 16 & Gemini 2.0</p>
         </div>
       </div>
     </footer>

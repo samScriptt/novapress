@@ -66,7 +66,7 @@ export default function LoginPage() {
             </div>
             
             <h2 className="font-serif text-5xl md:text-6xl font-medium leading-none mb-8 text-white">
-                Separating signal from noise in a <span className="italic text-zinc-400">complex world</span>.
+                When data speaks, we listen.
             </h2>
             
             <div className="pl-6 border-l-2 border-blue-500/80">
@@ -80,11 +80,7 @@ export default function LoginPage() {
         {/* Technical Footer */}
         <div className="relative z-10 border-t border-white/10 pt-6 flex justify-between text-[10px] font-mono text-zinc-500 uppercase tracking-wider">
             <div className="flex gap-6">
-                <span>Secure_Connection_TLS</span>
-                <span>Latency: 12ms</span>
-            </div>
-            <div>
-                Data_Center: US_East
+                <span>Secure_Connection</span>
             </div>
         </div>
       </div>
