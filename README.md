@@ -1,234 +1,147 @@
 
 # NovaPress – Autonomous AI News Platform
 
-  
+![Project Status](https://img.shields.io/badge/Status-Live-success)
+![AI Model](https://img.shields.io/badge/AI-Gemini_2.5_Flash-blue)
+![Stack](https://img.shields.io/badge/Stack-Next.js_16_|_Supabase_|_Stripe-black)
 
-NovaPress is a fully autonomous journalism platform operating as a SaaS product. It uses AI agents to curate, write, distribute, and monetize news with no human intervention.
+### Live Demo
+**You can find this site running here:** [https://thenovapress.vercel.app/](https://thenovapress.vercel.app/)
 
-  
+### Social Agent
+**Follow the automated posts on X/Twitter:** [@NovaPressTT](https://x.com/NovaPressTT)
 
 ---
 
-  
+## About the Project
 
-## Features
+NovaPress is a fully autonomous journalism platform operating as a SaaS product. It utilizes a swarm of AI agents to curate, write, distribute, and monetize news with zero human intervention.
 
-  
+### How to Use the Live Demo
+
+1.  **Create an Account:** Click on the login icon to sign up. You can create a free account to read 1 article per day.
+2.  **Payments (Sandbox Mode):** The live version is connected to **Stripe Test Mode**.
+    * To unlock unlimited access (Premium), click subscribe.
+    * Use the Stripe test card: **`4242 4242 4242 4242`**, any future date, and any CVC.
+    * **No real money will be charged.**
+3.  **Logs & Feedback:** The system automatically collects anonymous usage metrics (views, clicks) and allows logged-in users to send feedback/feature requests.
+4.  **Admin Dashboard:** There is a comprehensive BI Dashboard located at `/painel/admin`.
+    * *Note:* Access is strictly restricted to specific administrator emails via RLS and server-side checks.
+
+---
+
+## The Architecture: Autonomous Agents
 
 The system is built around three main agents plus supporting user-facing features.
 
-  
-
 ### 1. Curation & Writing Agent
-
--  **Data Source:** Tracks U.S. trending news in real time using NewsAPI (top-headlines).
-
--  **Intelligence:** Uses Google Gemini 2.5 Flash as the Editor-in-Chief.
-
--  **Workflow:**
-
-- Selects relevant articles and removes duplicates or spam.
-
-- Writes long-form, native-English news articles.
-
-- Automatically classifies content into categories (Tech, World, AI, Economy, Science).
-
-- Generates tags and share-friendly summaries.
-
-- Downloads images and uploads stable copies to Supabase Storage.
-
-  
+* **Data Source:** Tracks U.S. trending news in real-time using NewsAPI.
+* **Intelligence:** Uses **Google Gemini 2.5 Flash** as the Editor-in-Chief.
+* **Workflow:**
+    * Selects relevant articles and filters spam.
+    * Writes long-form, native-English news articles.
+    * Classifies content (Tech, World, AI, Economy, Science).
+    * Generates tags and summaries.
+    * **Images:** Downloads original images and uploads them to Supabase Storage for permanence.
 
 ### 2. Billing Agent
-
--  **Stripe integration** for recurring $1/month subscriptions.
-
--  **User segmentation:**
-
--  **Visitors:** Can read only the headline and intro (blur/paywall).
-
--  **Free logged-in users:** Can read one full article per day.
-
--  **Premium subscribers:** Unlimited access.
-
-  
+* **Stripe Integration:** Handles recurring $1/month subscriptions via Webhooks.
+* **User Segmentation (PLG):**
+    * **Visitors:** Blurred content (Headline/Intro only).
+    * **Free Users:** 1 full article per day limit.
+    * **Premium:** Unlimited access + Commenting + Voting.
 
 ### 3. Social Media Agent
+* **Distribution:** Automatically posts every new article to X (Twitter).
+* **Engagement:** Generates viral hooks, uses dynamic hashtags, and uploads the article image natively to the platform.
 
-- Automatically posts each published article on X/Twitter.
-
-- Generates engaging hooks, dynamic hashtags, and attaches the article image via native media upload.
-
-  
-
-### 4. User Experience
-
-- Clean editorial UI with serif/sans-serif typography (Playfair Display + Inter).
-
-- Interactive features: Likes, Dislikes, Comments (subscribers only).
-
-- Topic voting and user feedback system.
-
-- Automatic and manual dark mode.
-
-  
+### 4. Automation (Cron)
+* The system runs a scheduled task every **2 hours**.
+* It is triggered via **cron-job.org**, which securely hits the protected API endpoint to ensure fresh content throughout the day.
 
 ---
-
-  
 
 ## Tech Stack
 
-  
-
-**Frontend:** Next.js 16 (App Router), Tailwind CSS v4, Lucide React
-
-**Backend:** Next.js Server Actions, API Routes
-
-**Database:** Supabase (PostgreSQL + Auth + Storage)
-
-**AI:** Google Generative AI SDK
-
-**Payments:** Stripe SDK
-
-**Social:** Twitter API v2 (twitter-api-v2)
-
-  
+* **Frontend:** Next.js 16 (App Router), Tailwind CSS v4, Lucide React.
+* **Backend:** Next.js Server Actions & API Routes.
+* **Database:** Supabase (PostgreSQL) + Auth + Storage.
+* **AI:** Google Generative AI SDK (`@google/generative-ai`).
+* **Payments:** Stripe SDK.
+* **Social:** Twitter API v2 (`twitter-api-v2`).
 
 ---
 
-  
+## Running Locally
 
-## Setup & Installation
+If you want to clone and run this project on your machine:
 
-  
+### 1. Prerequisites
+You will need API keys for:
+* Supabase
+* Google Gemini (AI Studio)
+* NewsAPI
+* Twitter Developer Portal
+* Stripe
 
-### 1. Requirements
-
-  
-
-You will need accounts on:
-
-- Supabase (DB + Auth + Storage)
-
-- Google AI Studio (Gemini API key)
-
-- NewsAPI
-
-- Twitter Developer Platform (Write permissions)
-
-- Stripe (billing)
-
-  
-
-### 2. Clone the Repository
-
-  
-
+### 2. Installation
 ```bash
-
-git  clone  https://github.com/your-username/novapress.git
-
-cd  novapress
-
-npm  install
-
+git clone https://github.com/samScriptt/novapress.git
+cd novapress
+npm install
 ```
 
-### 3. Supabase Database Setup
-
-Run the SQL files located in `/db` inside the Supabase SQL Editor.
-
-This will:
-
--   Create tables: `posts`, `profiles`, `comments`, `likes`, `site_feedback`, `access_logs`
-    
--   Set up security policies (RLS)
-    
--   Add triggers such as `handle_new_user`
-    
--   Create a public bucket named `news-images`
-    
-
-### 4. Environment Variables
+### 3. Environment Variables
 
 Create a `.env.local` file:
 
 ```bash
-# Supabase
-NEXT_PUBLIC_SUPABASE_URL="your_supabase_url"
-NEXT_PUBLIC_SUPABASE_ANON_KEY="your_anon_key"
-SUPABASE_SERVICE_ROLE_KEY="your_service_role_key"
+NEXT_PUBLIC_SUPABASE_URL="sbp_url"
+NEXT_PUBLIC_SUPABASE_ANON_KEY="sbp_anon"
+SUPABASE_SERVICE_ROLE_KEY="sbp_service_role"
 
-# AI & Data
-GEMINI_API_KEY="your_gemini_key"
-NEWS_API_KEY="your_newsapi_key"
+GEMINI_API_KEY="ai_key"
+NEWS_API_KEY="news_key"
 
-# Twitter / X
-TWITTER_APP_KEY="api_key"
-TWITTER_APP_SECRET="api_secret"
-TWITTER_ACCESS_TOKEN="access_token"
-TWITTER_ACCESS_SECRET="access_secret"
+TWITTER_APP_KEY="x_key"
+TWITTER_APP_SECRET="x_secret"
+TWITTER_ACCESS_TOKEN="x_token"
+TWITTER_ACCESS_SECRET="x_token_secret"
 
-# Stripe
-NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY="pk_test_..."
-STRIPE_SECRET_KEY="sk_test_..."
-STRIPE_WEBHOOK_SECRET="whsec_..."
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY="pk_test..."
+STRIPE_SECRET_KEY="sk_test..."
+STRIPE_WEBHOOK_SECRET="whsec..."
 NEXT_PUBLIC_STRIPE_PRICE_ID="price_..."
+
+CRON_SECRET="your_secure_password"
+SITE_URL="http://localhost:3000"
 ```
 
-### 5. Stripe Webhook (Local Development)
+### 4. Database Setup
 
-Install the Stripe CLI and run:
+Run the SQL scripts located in the `/db` folder inside your Supabase SQL Editor to create tables (posts, profiles, logs, feedback) and set up Row Level Security (RLS).
+
+### 5. Run Development Server
 
 ```bash
-stripe login
-stripe listen --forward-to localhost:3000/api/stripe/webhook
+npm run dev
 ```
-Add the generated webhook secret to your `.env.local`.
+Visit `http://localhost:3000`.
 
-----------
+### 6. Trigger Agent Manually
 
-## Running the Project
-
-### Development Server
-
-`npm run dev` 
-
-Visit: [http://localhost:3000](http://localhost:3000)
-
-### Trigger the Cron Job Manually
-
-`curl http://localhost:3000/api/cron` 
-
-This runs the full pipeline (NewsAPI → AI → Database → Twitter).
-
-----------
-
-## Project Structure
-
+To force the agent to run immediately:
 ```bash
-/app
-  /api
-    /cron        # Main pipeline (Curation + AI + Posting)
-    /stripe      # Checkout & Webhook
-  /category      # Dynamic category pages
-  /post          # Article page with paywall
-  /login         # Custom authentication
-  /monitoring    # Logs and feedback system
-/components       # Shared UI components
-/utils/supabase   # Client, server, and middleware helpers
-/db               # SQL schema & migration scripts
+curl http://localhost:3000/api/cron?key=YOUR_CRON_SECRET
 ```
 
-----------
 ## Security & Monitoring
 
--   **Middleware:** Protects authenticated routes and handles session logic.
+-   **Middleware:** Protects authenticated routes.
     
--   **Row Level Security:** Ensures users can only edit their own comments, likes, and feedback.
+-   **Row Level Security (RLS):** Ensures strict data isolation between users.
     
--   **Event Logging:** Automatic insertion of login, page view, and post view metrics into `access_logs` for analytics tooling.
+-   **Event Logging:** Automatic insertion of login, page view, and error metrics into `access_logs`.
     
 
 ----------
