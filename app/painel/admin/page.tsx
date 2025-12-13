@@ -1,11 +1,11 @@
 import { createClient } from '@/utils/supabase/server';
 import { getAdminMetrics } from './data-fetchers';
 import { DashboardUI } from './DashboardUI';
-import Link from 'next/link'; // <--- Importante: Adicionei isso
+import Link from 'next/link';
 
 export const dynamic = 'force-dynamic';
 
-const ADMIN_EMAILS = ['pioneer@novapress.com', 'seu-email-real@gmail.com']; // Adicione seus e-mails aqui
+const ADMIN_EMAILS = ['pioneer@novapress.com', 'seu-email-real@gmail.com']; 
 
 export default async function AdminPage() {
   const supabase = await createClient();

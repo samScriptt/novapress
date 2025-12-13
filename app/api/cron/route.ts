@@ -114,7 +114,7 @@ export async function GET(req: NextRequest) {
     const finalSummary = aiResponse.twitter_summary || targetArticle.description || targetArticle.title;
 
 
-    // --- 2. IMAGE PROCESSING (NEW) ---
+    // --- 2. IMAGE PROCESSING (CORRECTED) ---
     let finalImageUrl = targetArticle.urlToImage; // Default: original URL
     let imageBuffer: Buffer | null = null;
     let imageMimeType = 'image/jpeg';
@@ -123,20 +123,32 @@ export async function GET(req: NextRequest) {
         try {
             console.log('🖼️ Downloading original image...');
             const imageRes = await fetch(targetArticle.urlToImage);
-            const arrayBuffer = await imageRes.arrayBuffer();
-            imageBuffer = Buffer.from(arrayBuffer);
             
-            // Attempt to detect mime type or assume jpeg
-            const contentType = imageRes.headers.get('content-type');
-            if (contentType) imageMimeType = contentType;
+            if (!imageRes.ok) throw new Error(`Failed to fetch image: ${imageRes.status}`);
 
-            // Generate a unique file name
-            const fileName = `post-${Date.now()}.${imageMimeType.split('/')[1] || 'jpg'}`;
+            const contentTypeHeader = imageRes.headers.get('content-type');
+            const cleanContentType = contentTypeHeader?.split(';')[0]?.trim().toLowerCase();
+
+            if (!cleanContentType || !cleanContentType.startsWith('image/')) {
+                console.warn(`⚠️ Skipped upload: URL returned ${cleanContentType} instead of an image.`);
+                throw new Error('Not an image');
+            }
+
+            const arrayBuffer = await imageRes.arrayBuffer();
+            
+            if (arrayBuffer.byteLength === 0) throw new Error('Empty image buffer');
+
+            imageBuffer = Buffer.from(arrayBuffer);
+            imageMimeType = cleanContentType;
+
+            // Clean extension (ex: 'jpeg', 'png', 'webp')
+            const extension = imageMimeType.split('/')[1] || 'jpg';
+            const fileName = `post-${Date.now()}.${extension}`;
 
             // Upload to Supabase Storage (Bucket 'news-images')
             const { data: uploadData, error: uploadError } = await supabase
                 .storage
-                .from('news-images') // Make sure this bucket exists in the dashboard
+                .from('news-images') 
                 .upload(fileName, imageBuffer, {
                     contentType: imageMimeType,
                     upsert: false
@@ -144,7 +156,6 @@ export async function GET(req: NextRequest) {
 
             if (uploadError) {
                 console.error('Supabase upload error:', uploadError);
-                // Keep original URL if upload fails
             } else {
                 // Get the public URL from the bucket
                 const { data: { publicUrl } } = supabase
@@ -160,7 +171,6 @@ export async function GET(req: NextRequest) {
             console.error('Failed to process image:', imgErr);
         }
     }
-
 
     // --- 3. SAVE TO DATABASE ---
     const { data: savedPost, error } = await supabase
