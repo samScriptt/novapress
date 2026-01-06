@@ -4,8 +4,12 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, 
   LineChart, Line, CartesianGrid
 } from 'recharts';
-// Adicionei 'Star' na lista de importações abaixo
 import { Terminal, Shield, Cpu, Activity, TrendingUp, Users, Star } from 'lucide-react';
+
+const truncate = (str: string, length: number) => {
+  if (!str) return '';
+  return str.length > length ? str.substring(0, length) + '...' : str;
+};
 
 export function DashboardUI({ data }: { data: any }) {
   const { kpi, charts, raw } = data;
@@ -13,7 +17,6 @@ export function DashboardUI({ data }: { data: any }) {
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
       
-      {/* Top Bar: Status do Sistema */}
       <div className="flex flex-col md:flex-row justify-between items-center bg-zinc-900/50 border border-zinc-800 rounded-lg p-4 backdrop-blur-sm">
         <div className="flex items-center gap-3">
             <div className="relative flex h-3 w-3">
@@ -37,7 +40,6 @@ export function DashboardUI({ data }: { data: any }) {
         </div>
       </div>
 
-      {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <CmdCard 
           label="Total Agents" 
@@ -68,10 +70,8 @@ export function DashboardUI({ data }: { data: any }) {
         />
       </div>
 
-      {/* Gráficos */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         
-        {/* Gráfico 1 */}
         <div className="bg-zinc-900/40 border border-zinc-800 rounded-xl p-6">
             <div className="flex justify-between items-center mb-6">
                 <div>
@@ -91,6 +91,7 @@ export function DashboardUI({ data }: { data: any }) {
                             tick={{fill: '#a1a1aa', fontSize: 11}} 
                             axisLine={false}
                             tickLine={false}
+                            tickFormatter={(val) => truncate(val, 20)}
                         />
                         <Tooltip 
                             cursor={{fill: '#27272a', opacity: 0.4}}
@@ -117,7 +118,7 @@ export function DashboardUI({ data }: { data: any }) {
         <div className="bg-zinc-900/40 border border-zinc-800 rounded-xl p-6">
             <div className="flex justify-between items-center mb-6">
                 <div>
-                    <h3 className="text-zinc-100 font-semibold">Traffic Analysis</h3>
+                    <h3 className="text-zinc-100 font-semibold">Traffic Analysis (30 days)</h3>
                     <p className="text-zinc-500 text-xs">System interaction volume over time</p>
                 </div>
                 <Activity size={16} className="text-zinc-600" />
@@ -126,37 +127,43 @@ export function DashboardUI({ data }: { data: any }) {
                 <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={charts.activity}>
                         <CartesianGrid strokeDasharray="3 3" stroke="#27272a" vertical={false} />
-                        <XAxis 
-                            dataKey="name" 
-                            tick={{fill: '#71717a', fontSize: 11}} 
+
+                        <XAxis
+                            dataKey="date"
+                            domain={['dataMin', 'dataMax']}
+                            tickFormatter={(v) =>
+                            new Date(v).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
+                            }
+                            tick={{ fill: '#71717a', fontSize: 11 }}
                             axisLine={false}
                             tickLine={false}
-                            dy={10}
                         />
+
                         <Tooltip 
                             contentStyle={{ 
-                                backgroundColor: '#18181b', 
-                                borderColor: '#3f3f46', 
-                                color: '#fff',
-                                borderRadius: '8px',
-                                fontSize: '12px'
+                            backgroundColor: '#18181b', 
+                            borderColor: '#3f3f46', 
+                            color: '#fff',
+                            borderRadius: '8px',
+                            fontSize: '12px'
                             }}
                         />
+
                         <Line 
-                            type="monotone" 
-                            dataKey="value" 
-                            stroke="#3b82f6" 
-                            strokeWidth={3} 
-                            dot={{r: 4, fill: '#18181b', strokeWidth: 2}} 
-                            activeDot={{r: 6}}
+                            type="monotone"   // 🔥 curva suave
+                            dataKey="count"
+                            stroke="#3b82f6"
+                            strokeWidth={3}
+                            dot={{ r: 4, fill: '#18181b', strokeWidth: 2 }}
+                            activeDot={{ r: 6 }}
                         />
                     </LineChart>
+
                 </ResponsiveContainer>
             </div>
         </div>
       </div>
 
-      {/* Tabela de Feedback */}
       <div className="border border-zinc-800 rounded-xl overflow-hidden bg-zinc-900/30">
         <div className="p-4 border-b border-zinc-800 flex justify-between items-center bg-zinc-900/50">
             <div>
