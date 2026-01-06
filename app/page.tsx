@@ -60,6 +60,29 @@ export default async function Home({ searchParams }: HomeProps) {
     }
   }
 
+  const getPageNumbers = () => {
+    const delta = 1; // Quantas páginas mostrar ao redor da atual
+    const range = [];
+    
+    for (let i = 1; i <= totalPages; i++) {
+      if (
+        i === 1 || // Primeira
+        i === totalPages || // Última
+        (i >= currentPage - delta && i <= currentPage + delta) // Vizinhas
+      ) {
+        range.push(i);
+      } else if (
+        range[range.length - 1] !== '...' && 
+        range.length > 0
+      ) {
+        range.push('...');
+      }
+    }
+    return range;
+  };
+  
+  const pages = getPageNumbers();
+
   return (
     <main className="min-h-screen bg-zinc-50 dark:bg-black pt-20 pb-12">
       <Header />
@@ -146,22 +169,44 @@ export default async function Home({ searchParams }: HomeProps) {
           ))}
         </div>
 
-        <div className="flex justify-between items-center mt-16 pt-6 border-t border-dashed border-zinc-300 dark:border-green-900/50 text-xs font-bold uppercase font-mono">
-            {currentPage > 1 ? (
-                <Link href={`/?page=${currentPage - 1}`} className="hover:text-blue-600 dark:hover:text-green-400 flex items-center gap-1">
-                    &lt;&lt; PREV_PAGE
-                </Link>
-            ) : <span className="opacity-20 text-zinc-400 dark:text-green-900 cursor-not-allowed">&lt;&lt; NULL</span>}
+        <div className="flex flex-col md:flex-row justify-between items-center mt-16 pt-6 border-t border-dashed border-zinc-300 dark:border-green-900/50 text-xs font-bold font-mono gap-4">
             
-            <span className="bg-black text-white dark:bg-green-900 dark:text-green-100 px-3 py-1">
-                PAGE_{currentPage}_OF_{totalPages}
-            </span>
-
-            {currentPage < totalPages ? (
-                <Link href={`/?page=${currentPage + 1}`} className="hover:text-blue-600 dark:hover:text-green-400 flex items-center gap-1">
-                    NEXT_PAGE &gt;&gt;
+            {/* Botão Anterior */}
+            {currentPage > 1 ? (
+                <Link href={`/?page=${currentPage - 1}`} className="hover:text-blue-600 dark:hover:text-green-400 flex items-center gap-1 uppercase">
+                    &lt;&lt; PREV
                 </Link>
-            ) : <span className="opacity-20 text-zinc-400 dark:text-green-900 cursor-not-allowed">NULL &gt;&gt;</span>}
+            ) : <span className="opacity-20 text-zinc-400 dark:text-green-900 cursor-not-allowed uppercase">&lt;&lt; PREV</span>}
+            
+            {/* Lista de Números */}
+            <div className="flex items-center gap-2">
+              {pages.map((p, i) => (
+                p === '...' ? (
+                  <span key={i} className="text-zinc-400 dark:text-green-900 px-2">...</span>
+                ) : (
+                  <Link 
+                    key={i} 
+                    href={`/?page=${p}`}
+                    className={`
+                      px-3 py-1 border transition-all
+                      ${Number(p) === currentPage 
+                        ? 'bg-black text-white border-black dark:bg-green-600 dark:text-black dark:border-green-600' 
+                        : 'bg-transparent text-zinc-500 border-transparent hover:border-zinc-300 dark:text-green-700 dark:hover:border-green-800 dark:hover:text-green-400'
+                      }
+                    `}
+                  >
+                    {p}
+                  </Link>
+                )
+              ))}
+            </div>
+
+            {/* Botão Próximo */}
+            {currentPage < totalPages ? (
+                <Link href={`/?page=${currentPage + 1}`} className="hover:text-blue-600 dark:hover:text-green-400 flex items-center gap-1 uppercase">
+                    NEXT &gt;&gt;
+                </Link>
+            ) : <span className="opacity-20 text-zinc-400 dark:text-green-900 cursor-not-allowed uppercase">NEXT &gt;&gt;</span>}
         </div>
 
       </div>
