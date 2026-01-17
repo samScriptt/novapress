@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { ArrowUp, Share2, Twitter, Linkedin, Copy, Check } from "lucide-react"; // Importei Copy e Check
+import { FaWhatsapp } from "react-icons/fa";
+
 
 // Ícone do WhatsApp (SVG Inline para garantir compatibilidade se não tiver no lucide)
 const WhatsAppIcon = () => (
@@ -72,8 +74,9 @@ export function PostInteractions({ title }: { title: string }) {
           aria-label="Share on WhatsApp"
           className="p-2 bg-zinc-200 dark:bg-green-900/30 text-zinc-600 dark:text-green-400 rounded-sm hover:bg-[#25D366] hover:text-white dark:hover:bg-[#25D366] dark:hover:text-white transition-colors"
         >
-          <WhatsAppIcon />
+          <FaWhatsapp size={20} />
         </button>
+
 
         {/* Twitter */}
         <button

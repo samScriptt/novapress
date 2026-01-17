@@ -39,7 +39,8 @@ export default async function PostPage({ params }: PageProps) {
   const { data: { user } } = await supabase.auth.getUser();
   const isLoggedIn = !!user;
   
-  let userVote = 0;
+  let userVote: "like" | "dislike" | null = null;
+
   if (user) {
     const { data: voteData } = await supabase
       .from('post_likes')
@@ -47,7 +48,11 @@ export default async function PostPage({ params }: PageProps) {
       .eq('post_id', id)
       .eq('user_id', user.id)
       .single();
-    if (voteData) userVote = voteData.vote_type;
+
+    if (voteData) {
+      if (voteData.vote_type === 1) userVote = "like";
+      if (voteData.vote_type === -1) userVote = "dislike";
+    }
   }
 
   return (
