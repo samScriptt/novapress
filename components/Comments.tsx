@@ -1,11 +1,12 @@
 "use client";
 
 import { addComment } from "@/app/post/[id]/actions";
-import { User, SendHorizontal, Lock } from "lucide-react";
+import { User, Lock } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { enUS } from "date-fns/locale";
-import { useRef, useTransition, useState } from "react";
+import { useRef, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 interface Comment {
   id: string;
@@ -18,16 +19,20 @@ interface Props {
   postId: string;
   comments: Comment[];
   isLoggedIn: boolean;
-  isSubscriber: boolean;
+  // isSubscriber removido pois não é mais necessário
 }
 
-export function Comments({ postId, comments, isLoggedIn, isSubscriber }: Props) {
+export function Comments({ postId, comments, isLoggedIn }: Props) {
   const formRef = useRef<HTMLFormElement>(null);
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [loadingSubscription, setLoadingSubscription] = useState(false);
 
   const handleSubmit = async (formData: FormData) => {
+    if (!isLoggedIn) {
+        router.push("/login");
+        return;
+    }
+    
     startTransition(async () => {
       await addComment(formData);
       formRef.current?.reset();
@@ -35,113 +40,68 @@ export function Comments({ postId, comments, isLoggedIn, isSubscriber }: Props) 
     });
   };
 
-  // ⭐ Mesma lógica do ContentLock
-  const handleUpgrade = async () => {
-    if (!isLoggedIn) {
-      router.push("/login");
-      return;
-    }
-
-    setLoadingSubscription(true);
-    try {
-      const res = await fetch("/api/stripe/checkout", { method: "POST" });
-      const data = await res.json();
-      if (data.url) window.location.href = data.url;
-    } catch (err) {
-      alert("System Error: Payment gateway unreachable.");
-    } finally {
-      setLoadingSubscription(false);
-    }
-  };
-
   return (
-    <div className="mt-12">
-      <h3 className="text-2xl font-serif font-black mb-6">
-        Comments ({comments.length})
+    <div className="border-t border-zinc-200 dark:border-green-900/30 pt-12">
+      <h3 className="font-mono text-xl font-bold mb-8 text-zinc-900 dark:text-green-500 uppercase flex items-center gap-2">
+        <span className="w-2 h-6 bg-blue-600 dark:bg-green-500 block"></span>
+        Discussion_Log ({comments.length})
       </h3>
 
-      {/* Form Display Logic */}
-      {isSubscriber ? (
-        <form
-          action={handleSubmit}
-          ref={formRef}
-          className="mb-10 flex gap-4 items-start"
-        >
-          <div className="w-10 h-10 rounded-full bg-black dark:bg-white flex-shrink-0 flex items-center justify-center text-white dark:text-black font-bold text-xs">
-            ME
-          </div>
-
-          <div className="flex-grow relative">
+      {/* Formulário: Só aparece se estiver logado. Se não, mostra botão de login */}
+      <div className="mb-12">
+        {isLoggedIn ? (
+          <form ref={formRef} action={handleSubmit} className="relative">
             <input type="hidden" name="postId" value={postId} />
-
-            <textarea
-              name="content"
-              placeholder="Participate in the discussion..."
-              className="w-full p-4 pr-12 rounded-xl bg-stone-100 dark:bg-stone-900 border border-stone-200 dark:border-stone-800 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none h-28 text-sm disabled:opacity-50"
-              required
-              disabled={isPending}
-            />
-
-            <button
-              type="submit"
-              disabled={isPending}
-              className="absolute bottom-3 right-3 bg-blue-600 text-white p-2 rounded-full hover:bg-blue-700 transition disabled:bg-stone-400"
-              title="Send Comment"
+            <div className="relative">
+                <textarea
+                  name="content"
+                  required
+                  placeholder="Insert your comment..."
+                  className="w-full bg-white dark:bg-black border border-zinc-300 dark:border-green-800 p-4 pl-12 rounded-sm focus:outline-none focus:border-blue-600 dark:focus:border-green-500 transition-colors min-h-[100px] font-mono text-sm resize-y"
+                />
+                <User className="absolute top-4 left-4 text-zinc-400 dark:text-green-800" size={20} />
+            </div>
+            <div className="mt-2 flex justify-end">
+                <button
+                  type="submit"
+                  disabled={isPending}
+                  className="bg-blue-600 dark:bg-green-700 text-white px-6 py-2 text-xs font-bold uppercase tracking-widest hover:bg-blue-700 dark:hover:bg-green-600 transition-colors disabled:opacity-50"
+                >
+                  {isPending ? 'Transmitting...' : 'Send_Comment'}
+                </button>
+            </div>
+          </form>
+        ) : (
+          <div className="bg-zinc-100 dark:bg-green-900/10 border border-dashed border-zinc-300 dark:border-green-900 p-8 text-center rounded-sm">
+            <Lock className="mx-auto mb-4 text-zinc-400 dark:text-green-700" size={24} />
+            <p className="font-mono text-sm text-zinc-600 dark:text-green-400 mb-6">
+                Authentication required to participate in this thread.
+            </p>
+            <Link 
+                href="/login" 
+                className="inline-block bg-black text-white dark:bg-green-600 dark:text-black px-8 py-3 text-xs font-bold uppercase tracking-widest hover:opacity-80 transition-opacity"
             >
-              {isPending ? (
-                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              ) : (
-                <SendHorizontal size={18} />
-              )}
-            </button>
+                Login_To_Comment
+            </Link>
           </div>
-        </form>
-      ) : (
-        <div className="bg-stone-100 dark:bg-stone-900 p-8 rounded-xl text-center mb-10 border border-dashed border-stone-300 dark:border-stone-800">
-          <div className="flex justify-center mb-3 text-stone-400">
-            <Lock size={24} />
-          </div>
+        )}
+      </div>
 
-          <p className="text-stone-500 mb-4 font-serif italic">
-            {isLoggedIn
-              ? "Subscriber-only discussion. Upgrade to join."
-              : "Join the discussion."}
-          </p>
-
-          {/* ⭐ Botão corrigido (igual ao ContentLock) */}
-          <button
-            onClick={handleUpgrade}
-            disabled={loadingSubscription}
-            className="inline-block bg-black dark:bg-white text-white dark:text-black px-6 py-2 rounded-full font-bold text-sm hover:opacity-80 transition disabled:opacity-50"
-          >
-            {loadingSubscription
-              ? "PROCESSING..."
-              : isLoggedIn
-              ? "Upgrade Plan"
-              : "Login / Sign Up"}
-          </button>
-        </div>
-      )}
-
-      {/* Comment List */}
+      {/* Lista de Comentários (Visível para todos) */}
       <div className="space-y-6">
         {comments.map((comment) => (
-          <div
-            key={comment.id}
-            className="flex gap-4 group animate-in fade-in slide-in-from-bottom-2 duration-500"
-          >
-            <div className="w-10 h-10 rounded-full bg-stone-200 dark:bg-stone-800 flex items-center justify-center flex-shrink-0 text-stone-500 font-bold uppercase">
+          <div key={comment.id} className="flex gap-4 group animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="w-10 h-10 rounded-sm bg-zinc-200 dark:bg-green-900/20 flex items-center justify-center flex-shrink-0 text-zinc-500 dark:text-green-700 font-bold uppercase font-mono border border-zinc-300 dark:border-green-900/50">
               {comment.profiles?.username?.charAt(0) || "?"}
             </div>
 
-            <div className="flex-grow bg-stone-50 dark:bg-stone-900/50 p-4 rounded-xl rounded-tl-none border border-stone-100 dark:border-stone-800/50">
+            <div className="flex-grow bg-zinc-50 dark:bg-black p-4 border-l-2 border-zinc-200 dark:border-green-900 group-hover:border-blue-500 dark:group-hover:border-green-500 transition-colors">
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
-                  <span className="font-bold text-sm text-stone-900 dark:text-stone-100">
-                    @{comment.profiles?.username || "Anonymous"}
+                  <span className="font-bold text-xs font-mono text-zinc-900 dark:text-green-400">
+                    @{comment.profiles?.username || "Unknown_User"}
                   </span>
-
-                  <span className="text-[10px] text-stone-400 bg-stone-100 dark:bg-stone-800 px-2 py-0.5 rounded-full">
+                  <span className="text-[10px] text-zinc-400 dark:text-green-800 uppercase">
                     {formatDistanceToNow(new Date(comment.created_at), {
                       addSuffix: true,
                       locale: enUS,
@@ -150,7 +110,7 @@ export function Comments({ postId, comments, isLoggedIn, isSubscriber }: Props) 
                 </div>
               </div>
 
-              <p className="text-stone-700 dark:text-stone-300 text-sm leading-relaxed font-serif">
+              <p className="text-zinc-700 dark:text-zinc-300 text-sm leading-relaxed font-mono">
                 {comment.content}
               </p>
             </div>
@@ -159,8 +119,8 @@ export function Comments({ postId, comments, isLoggedIn, isSubscriber }: Props) 
 
         {comments.length === 0 && (
           <div className="text-center py-10 opacity-50">
-            <p className="font-serif italic text-stone-400">
-              No comments yet. Be the first!
+            <p className="font-mono italic text-zinc-400 dark:text-green-900 text-xs">
+              // NO_DATA_FOUND: BE_THE_FIRST_TO_COMMENT
             </p>
           </div>
         )}

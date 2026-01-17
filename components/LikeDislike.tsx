@@ -1,6 +1,6 @@
 "use client";
 
-import { ThumbsUp, ThumbsDown } from "lucide-react";
+import { ThumbsUp, ThumbsDown, Lock } from "lucide-react";
 import { toggleVote } from "@/app/post/[id]/actions";
 import { useRouter } from "next/navigation";
 import { useTransition, useState } from "react";
@@ -28,20 +28,14 @@ export function LikeDislike({
   const [vote, setVote] = useState<"like" | "dislike" | null>(userVote);
 
   const handleVote = (type: "like" | "dislike") => {
-    if (!isLoggedIn) {
-      if (confirm("You must be logged in to vote. Go to login?")) {
-        router.push("/login");
-      }
-      return;
-    }
-
+    // Lógica otimista (atualiza tela antes do servidor)
     if (vote === type) {
-
+      // Remove o voto
       if (type === "like") setLikes((n) => n - 1);
       if (type === "dislike") setDislikes((n) => n - 1);
       setVote(null);
     } else {
-
+      // Troca ou adiciona voto
       if (type === "like") {
         setLikes((n) => n + 1);
         if (vote === "dislike") setDislikes((n) => n - 1);
@@ -52,11 +46,38 @@ export function LikeDislike({
       setVote(type);
     }
 
+    // Chama o servidor em background
     startTransition(async () => {
       await toggleVote(postId, type);
     });
   };
 
+  // --- ESTADO BLOQUEADO (NÃO LOGADO) ---
+  if (!isLoggedIn) {
+    return (
+      <button
+        onClick={() => router.push("/login")}
+        className="flex items-center gap-4 bg-stone-100 dark:bg-stone-900 w-fit px-4 py-2 rounded-full border border-stone-200 dark:border-stone-800 hover:bg-stone-200 dark:hover:bg-stone-800 transition-all group"
+        title="Log in to vote"
+      >
+        {/* Ícone de Cadeado */}
+        <Lock size={16} className="text-stone-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors" />
+        
+        {/* Contadores Apenas Visualização */}
+        <div className="flex items-center gap-3 text-stone-400 dark:text-stone-600 font-bold text-sm select-none">
+           <span className="flex items-center gap-1">
+             <ThumbsUp size={18} /> {likes}
+           </span>
+           <span className="w-px h-4 bg-stone-300 dark:bg-stone-700"></span>
+           <span className="flex items-center gap-1">
+             <ThumbsDown size={18} /> {dislikes}
+           </span>
+        </div>
+      </button>
+    );
+  }
+
+  // --- ESTADO LOGADO (INTERATIVO) ---
   return (
     <div className="flex items-center gap-4 bg-stone-100 dark:bg-stone-900 w-fit px-4 py-2 rounded-full border border-stone-200 dark:border-stone-800">
       <button

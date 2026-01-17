@@ -4,8 +4,6 @@ import { notFound } from 'next/navigation';
 import { PostInteractions } from '@/components/PostInteractions';
 import { LikeDislike } from '@/components/LikeDislike';
 import { Comments } from '@/components/Comments';
-import { ContentLock } from '@/components/ContentLock';
-import { Typewriter } from '@/components/Typewriter'; 
 import { Header } from '@/components/Header';
 import { formatDistanceToNow } from 'date-fns';
 import { Clock, ArrowLeft, Hash } from 'lucide-react';
@@ -21,177 +19,82 @@ export default async function PostPage({ params }: PageProps) {
   const supabase = await createClient();
   const { id } = await params;
 
+  // 1. Busca o Post
   const { data: post } = await supabase.from('posts').select('*').eq('id', id).single();
   if (!post) notFound();
 
+  // Log de visualização (agora conta para todos)
   await logSystemEvent('view_post', { 
     post_id: id, 
     post_title: post.title,
     category: post.category 
   });
 
+  // 2. Busca Likes, Dislikes e Comentários
+  const { count: likeCount } = await supabase.from('post_likes').select('*', { count: 'exact', head: true }).eq('post_id', id).eq('vote_type', 1);
+  const { count: dislikeCount } = await supabase.from('post_likes').select('*', { count: 'exact', head: true }).eq('post_id', id).eq('vote_type', -1);
+  const { data: comments } = await supabase.from('comments').select('*, profiles(username)').eq('post_id', id).order('created_at', { ascending: false });
+
+  // 3. Verifica Usuário (Apenas para saber se está logado e qual foi o voto dele)
   const { data: { user } } = await supabase.auth.getUser();
   const isLoggedIn = !!user;
   
-  let isSubscriber = false;
-  let isDailyLimitReached = false;
-  let hasAccess = false;
-
+  let userVote = 0;
   if (user) {
-    const { data: profile } = await supabase
-        .from('profiles')
-        .select('is_subscriber, last_free_view_date, last_free_view_post_id')
-        .eq('id', user.id)
-        .single();
-    
-    isSubscriber = !!profile?.is_subscriber;
-
-    if (isSubscriber) {
-        hasAccess = true;
-    } else {
-        const today = new Date().toISOString().split('T')[0];
-        const lastViewDate = profile?.last_free_view_date;
-        const lastViewId = profile?.last_free_view_post_id;
-
-        if (lastViewDate !== today) {
-            hasAccess = true;
-            await supabase
-              .from('profiles')
-              .update({ last_free_view_date: today, last_free_view_post_id: id })
-              .eq('id', user.id);
-        } else {
-            if (String(lastViewId) === String(id)) hasAccess = true;
-            else {
-                hasAccess = false;
-                isDailyLimitReached = true;
-            }
-        }
-    }
-  } else {
-    hasAccess = false;
-  }
-
-  const { count: likeCount } = await supabase
-    .from('likes')
-    .select('*', { count: 'exact', head: true })
-    .eq('post_id', id)
-    .eq('vote_type', 'like');
-
-  const { count: dislikeCount } = await supabase
-    .from('likes')
-    .select('*', { count: 'exact', head: true })
-    .eq('post_id', id)
-    .eq('vote_type', 'dislike');
-
-  let userVote = null;
-  if (user) {
-    const { data: vote } = await supabase
-      .from('likes')
+    const { data: voteData } = await supabase
+      .from('post_likes')
       .select('vote_type')
       .eq('post_id', id)
       .eq('user_id', user.id)
       .single();
-    userVote = vote?.vote_type || null;
+    if (voteData) userVote = voteData.vote_type;
   }
 
-  const { data: comments } = await supabase
-    .from('comments')
-    .select('*, profiles(username)')
-    .eq('post_id', id)
-    .order('created_at', { ascending: false });
-  
-  const words = post.content.split(/\s+/).length;
-  const readTime = Math.ceil(words / 200);
-
   return (
-    <article className="min-h-screen bg-zinc-50 dark:bg-black text-zinc-900 dark:text-green-400 pt-20 selection:bg-green-500 selection:text-black font-mono">
+    <main className="min-h-screen bg-zinc-50 dark:bg-black pb-20">
       <Header />
 
-      <div className="container mx-auto px-4 max-w-3xl py-8">
-        
-        <div className="mb-8 border-b border-dashed border-zinc-300 dark:border-green-900/50 pb-8">
-            <Link
-              href="/"
-              className="inline-flex items-center gap-2 text-xs uppercase tracking-widest text-zinc-400 dark:text-green-700 hover:text-black dark:hover:text-green-400 mb-6 transition-colors"
-            >
-                <ArrowLeft size={14} /> Back_to_Feed
-            </Link>
+      <div className="container mx-auto px-4 pt-24 max-w-4xl">
+        <Link href="/" className="inline-flex items-center text-xs font-mono text-zinc-400 hover:text-black dark:text-green-800 dark:hover:text-green-500 mb-8 transition-colors uppercase tracking-widest">
+            <ArrowLeft size={14} className="mr-2" /> Back_To_Feed
+        </Link>
 
-            <div className="flex flex-wrap items-center gap-4 text-[10px] uppercase tracking-widest text-zinc-400 dark:text-green-800/80 font-bold mb-4">
-                <span className="text-blue-600 dark:text-green-500 bg-blue-50 dark:bg-green-900/20 px-2 py-1 rounded">
-                    {post.category || 'DATA_STREAM'}
+        {/* Cabeçalho do Artigo */}
+        <header className="mb-12 border-b border-zinc-200 dark:border-green-900/30 pb-12">
+            <div className="flex items-center gap-4 text-[10px] font-mono uppercase tracking-widest text-zinc-400 dark:text-green-800 mb-4">
+                <span className="px-2 py-1 bg-zinc-100 dark:bg-green-900/20 text-zinc-600 dark:text-green-600 font-bold rounded">
+                    {post.category || 'UNI_BROADCAST'}
                 </span>
-                <span>//</span>
-                <span>{formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}</span>
-                <span>//</span>
                 <span className="flex items-center gap-1">
-                  <Clock size={10} /> {readTime}MIN_READ
+                    <Clock size={12} />
+                    {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
                 </span>
             </div>
 
-            <h1 className="text-3xl md:text-5xl font-black leading-tight mb-8 text-black dark:text-green-500">
-                <Typewriter text={post.title} speed={20} cursor={false} />
+            <h1 className="text-3xl md:text-5xl font-bold mb-6 leading-tight font-mono text-zinc-900 dark:text-zinc-100 tracking-tight">
+                {post.title}
             </h1>
+        </header>
 
-            <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-black dark:bg-green-900/30 border border-green-500/50 text-white dark:text-green-400 flex items-center justify-center font-bold text-xs">
-                      AI
-                    </div>
-                    <div className="text-xs uppercase leading-tight">
-                        <p className="font-bold text-black dark:text-green-300">Gemini_Unit_2.5</p>
-                        <p className="text-zinc-400 dark:text-green-800">Automated_Editor</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-
+        {/* Imagem Principal */}
         {post.image_url && (
-            <div className="mb-12 border border-zinc-200 dark:border-green-900/50 p-1 bg-white dark:bg-green-900/5 rounded-sm">
-                <div className="aspect-video relative overflow-hidden">
-                    <img 
-                        src={post.image_url} 
-                        alt={post.title} 
-                        className="w-full h-full object-cover transition-transform duration-700 hover:scale-[1.02]" 
-                    />
-                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
-                        <p className="text-[10px] text-zinc-400 font-mono uppercase tracking-widest">
-                          Source_Visual_Data
-                        </p>
-                    </div>
-                </div>
+            <div className="mb-12 rounded-sm overflow-hidden border border-zinc-200 dark:border-green-900/30 relative group">
+                <div className="absolute inset-0 bg-green-500/10 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none mix-blend-overlay"></div>
+                <img src={post.image_url} alt={post.title} className="w-full object-cover max-h-[500px]" />
             </div>
         )}
 
-        <div className="relative group">
-            <div 
-                className={`
-                    prose prose-sm md:prose-lg max-w-none 
-                    font-mono text-zinc-800 dark:text-green-300/90 leading-relaxed
-                    prose-headings:font-bold prose-headings:uppercase prose-headings:text-black dark:prose-headings:text-green-400
-                    prose-a:text-blue-600 dark:prose-a:text-green-500 dark:prose-a:underline
-                    prose-blockquote:border-l-4 prose-blockquote:border-green-500 prose-blockquote:bg-green-900/10 prose-blockquote:text-green-200 prose-blockquote:not-italic prose-blockquote:py-2 prose-blockquote:px-4
-                    animate-in fade-in slide-in-from-bottom-8 duration-1000
-                    ${!hasAccess ? 'blur-sm select-none pointer-events-none max-h-96 overflow-hidden opacity-50' : ''} 
-                `}
-                dangerouslySetInnerHTML={{ __html: post.content }} 
-            />
-            
-            {!hasAccess && (
-                <ContentLock 
-                    isLoggedIn={isLoggedIn} 
-                    isLimitReached={isDailyLimitReached} 
-                />
-            )}
+        {/* --- CONTEÚDO AGORA É LIVRE PARA TODOS --- */}
+        <article className="prose dark:prose-invert prose-zinc max-w-none font-mono text-sm md:text-base leading-relaxed text-justify mb-16">
+            <div dangerouslySetInnerHTML={{ __html: post.content }} />
+        </article>
 
-            {hasAccess && (
-                <div className="mt-12 mb-8 text-center text-xs text-zinc-300 dark:text-green-900 uppercase tracking-[0.5em] animate-pulse">
-                    *** END OF TRANSMISSION ***
-                </div>
-            )}
+        <div className="mt-12 mb-8 text-center text-xs text-zinc-300 dark:text-green-900 uppercase tracking-[0.5em] animate-pulse">
+            *** END OF TRANSMISSION ***
         </div>
 
-        <div className={!hasAccess ? 'hidden' : 'mt-12'}>
+        {/* Área de Interações (Sempre visível, lógica de login fica dentro dos componentes) */}
+        <div className="mt-12">
             <div className="flex flex-col md:flex-row justify-between items-center gap-6 p-6 bg-zinc-100 dark:bg-green-900/10 border border-zinc-200 dark:border-green-900/30 rounded-sm mb-12">
                 <div className="flex items-center gap-4">
                     <LikeDislike 
@@ -199,7 +102,7 @@ export default async function PostPage({ params }: PageProps) {
                         initialLikes={likeCount || 0} 
                         initialDislikes={dislikeCount || 0}
                         userVote={userVote}
-                        isLoggedIn={true}
+                        isLoggedIn={isLoggedIn} // Passamos o estado de login
                     />
                 </div>
                 <div className="w-full md:w-auto">
@@ -213,12 +116,11 @@ export default async function PostPage({ params }: PageProps) {
             <Comments 
                 postId={post.id} 
                 comments={comments || []} 
-                isLoggedIn={isLoggedIn}
-                isSubscriber={isSubscriber}
+                isLoggedIn={isLoggedIn} // Passamos o estado de login
             />
         </div>
 
       </div>
-    </article>
+    </main>
   );
 }
