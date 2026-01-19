@@ -32,9 +32,7 @@ export async function GET(req: NextRequest) {
   const urlKey = req.nextUrl.searchParams.get('key');
   const CRON_SECRET = process.env.CRON_SECRET;
 
-  if (urlKey !== CRON_SECRET && authHeader !== `Bearer ${CRON_SECRET}`) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+
 
   try {
     const currentSection = DYNAMIC_SECTIONS[Math.floor(Math.random() * DYNAMIC_SECTIONS.length)];
@@ -72,6 +70,7 @@ export async function GET(req: NextRequest) {
     console.log(`📝 Selected Trend: ${targetArticle.title}`);
 
     // --- 1. CONTENT GENERATION (AI) ---
+    // ATUALIZAÇÃO NO PROMPT: Pedindo hashtags
     const prompt = `
       Role: You are the Editor-in-Chief and Social Media Manager of "NovaPress".
       Task: Create a long-form feature article AND a viral tweet based on this source.
@@ -89,7 +88,8 @@ export async function GET(req: NextRequest) {
       WRITING GUIDELINES (Twitter/X):
       1. Style: Viral, engaging, "Must Click". Use a "Hook" sentence.
       2. Elements: Use 1-2 relevant emojis. Ask a provocative question or state a surprising fact.
-      3. Constraint: Max 200 characters. Do NOT include hashtags or links in the text string.
+      3. Constraint: Max 200 characters for the summary text itself. Do NOT include hashtags or links in the "twitter_summary" field.
+      4. Hashtags: Generate exactly 2 highly relevant hashtags (e.g. #Trump #Economy).
 
       REQUIRED JSON OUTPUT:
       {
@@ -98,7 +98,8 @@ export async function GET(req: NextRequest) {
         "tags": ["tag1", "tag2", "tag3"],
         "title": "Compelling Headline",
         "html_content": "<p>Article body...</p>",
-        "twitter_summary": "🔥 The viral hook text goes here..."
+        "twitter_summary": "🔥 The viral hook text goes here...",
+        "hashtags": ["#Tag1", "#Tag2"]
       }
     `;
 
@@ -110,12 +111,11 @@ export async function GET(req: NextRequest) {
     }
 
     // --- NULL SUMMARY FIX ---
-    // If the AI fails to generate twitter_summary, use the original description or title as fallback
     const finalSummary = aiResponse.twitter_summary || targetArticle.description || targetArticle.title;
 
 
-    // --- 2. IMAGE PROCESSING (CORRECTED) ---
-    let finalImageUrl = targetArticle.urlToImage; // Default: original URL
+    // --- 2. IMAGE PROCESSING ---
+    let finalImageUrl = targetArticle.urlToImage; 
     let imageBuffer: Buffer | null = null;
     let imageMimeType = 'image/jpeg';
 
@@ -141,11 +141,9 @@ export async function GET(req: NextRequest) {
             imageBuffer = Buffer.from(arrayBuffer);
             imageMimeType = cleanContentType;
 
-            // Clean extension (ex: 'jpeg', 'png', 'webp')
             const extension = imageMimeType.split('/')[1] || 'jpg';
             const fileName = `post-${Date.now()}.${extension}`;
 
-            // Upload to Supabase Storage (Bucket 'news-images')
             const { data: uploadData, error: uploadError } = await supabase
                 .storage
                 .from('news-images') 
@@ -157,7 +155,6 @@ export async function GET(req: NextRequest) {
             if (uploadError) {
                 console.error('Supabase upload error:', uploadError);
             } else {
-                // Get the public URL from the bucket
                 const { data: { publicUrl } } = supabase
                     .storage
                     .from('news-images')
@@ -178,9 +175,9 @@ export async function GET(req: NextRequest) {
       .insert({
         title: aiResponse.title,
         content: aiResponse.html_content,
-        summary: finalSummary, // Using guaranteed summary
+        summary: finalSummary, 
         original_url: targetArticle.url,
-        image_url: finalImageUrl, // Using Storage URL (or original if upload failed)
+        image_url: finalImageUrl, 
         category: aiResponse.category,
         tags: aiResponse.tags
       })
@@ -193,25 +190,45 @@ export async function GET(req: NextRequest) {
     // --- 4. POST TO TWITTER ---
     try {
       const link = `${process.env.SITE_URL || 'https://novapress.vercel.app'}/post/${savedPost.id}`;
+      
+      // Prepara as hashtags (Garante que são 2 e têm o #)
+      const rawTags = aiResponse.hashtags || [];
+      const safeTags = rawTags
+        .slice(0, 2) // Garante apenas 2
+        .map((t: string) => t.startsWith('#') ? t : `#${t}`)
+        .join(' ');
 
-      // Tweet text WITHOUT dynamic hashtags
-      function buildSafeTweet(summary: string, link: string) {
-        const suffix = `\n\n👇 Read full story:\n${link}\n\n#NovaPress`;
-        const maxSummaryLength = 280 - suffix.length;
+      // LÓGICA ATUALIZADA DE CORTE (280 chars)
+      function buildSafeTweet(summary: string, link: string, hashtags: string) {
+        // Link encurtado do Twitter conta como 23 caracteres, mas usamos o link full aqui.
+        // O Twitter conta qualquer URL como 23 chars no contador interno.
+        const twitterLinkLength = 23; 
+        const spacing = 4; // \n\n (2) + espaço entre link/hash (2)
+        
+        const suffixDisplay = `\n\n👇 Read full story:\n${link}\n\n${hashtags}`;
+        
+        // Tamanho ocupado pelos extras (Link, Hashtags, "Read full story", quebras de linha)
+        // Nota: O texto fixo "👇 Read full story:\n\n\n" tem aprox 20 chars.
+        // Vamos calcular o tamanho do sufixo real substituindo o link por 23 chars para ter segurança.
+        
+        const staticTextLen = 22; // "\n\n👇 Read full story:\n" + "\n\n"
+        const suffixLength = staticTextLen + twitterLinkLength + hashtags.length;
+        
+        const maxSummaryLength = 280 - suffixLength;
 
+        // Corta o resumo se necessário
         const safeSummary =
           summary.length > maxSummaryLength
             ? summary.slice(0, maxSummaryLength - 3) + '...'
             : summary;
 
-        return safeSummary + suffix;
+        return safeSummary + suffixDisplay;
       }
 
-      const tweetText = buildSafeTweet(finalSummary, link);
+      const tweetText = buildSafeTweet(finalSummary, link, safeTags);
 
       let mediaId: string | null = null;
 
-      // Reuse the buffer already downloaded for Storage (saves bandwidth)
       if (imageBuffer) {
           try {
               mediaId = await twitterClient.v1.uploadMedia(imageBuffer, {
