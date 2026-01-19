@@ -130,8 +130,6 @@ export default async function Home({ searchParams }: HomeProps) {
           </section>
         )}
 
-        {!searchQuery && currentPage === 1 && <TopicVoting />}
-
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {gridPosts.map((post) => (
             <Link href={`/post/${post.id}`} key={post.id} className="group flex flex-col h-full bg-white dark:bg-zinc-900/40 border border-zinc-200 dark:border-green-900/30 hover:border-black dark:hover:border-green-500 transition-colors rounded-sm overflow-hidden">
@@ -168,6 +166,12 @@ export default async function Home({ searchParams }: HomeProps) {
             </Link>
           ))}
         </div>
+
+        {!searchQuery && currentPage === 1 && (
+            <div className="mt-20 border-t border-zinc-200 dark:border-green-900/30 pt-12">
+                <TopicVoting />
+            </div>
+        )}
 
         <div className="flex flex-col md:flex-row justify-between items-center mt-16 pt-6 border-t border-dashed border-zinc-300 dark:border-green-900/50 text-xs font-bold font-mono gap-4">
             
