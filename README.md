@@ -17,12 +17,6 @@
 
   
 
-### Social Agent
-
-**Follow the automated posts on X/Twitter:**  [@NovaPressTT](https://x.com/NovaPressTT)
-
-  
-
 ---
 
   
