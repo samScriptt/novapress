@@ -103,6 +103,20 @@ The system is built around three main agents plus supporting user-facing feature
 
   
 
+### 5. Smart Search (Elasticsearch)
+
+* **Goal:** Typo-tolerant, "Google-like" search on the homepage search box, instead of an exact substring match.
+
+* **How it works:** Posts are indexed into Elasticsearch (`title`, `summary`, `category`, `tags`). Searches run a `multi_match` query with `fuzziness: AUTO` across those fields, so small typos (e.g. `tecnology` instead of `technology`) still return relevant results.
+
+* **Sync:** New posts created by the Cron agent are automatically indexed into Elasticsearch right after being saved to Supabase.
+
+* **Resilience:** If Elasticsearch is unreachable, the homepage search automatically falls back to the original Postgres `ilike` search, so the site keeps working without it.
+
+* **Status:** This runs locally via Docker (see setup below) — it's a study/local-only feature and is not part of the deployed production environment.
+
+  
+
 ---
 
   
@@ -122,6 +136,8 @@ The system is built around three main agents plus supporting user-facing feature
 * **Payments:** Stripe SDK (Currently disabled for open access).
 
 * **Social:** Twitter API v2 (`twitter-api-v2`).
+
+* **Search:** Elasticsearch (`@elastic/elasticsearch`) — local/study setup, with fallback to Postgres `ilike`.
 
   
 
@@ -211,6 +227,10 @@ CRON_SECRET="your_secure_password"
 
 SITE_URL="http://localhost:3000"
 
+  
+
+ELASTICSEARCH_URL="http://localhost:9200"
+
 ```
 
   
@@ -242,6 +262,28 @@ To force the agent to run immediately:
 curl http://localhost:3000/api/cron?key=YOUR_CRON_SECRET
 
 ```
+
+  
+
+### 7. (Optional) Elasticsearch Smart Search
+
+Spin up Elasticsearch + Kibana locally:
+
+```bash
+
+docker compose up -d
+
+```
+
+Then index the existing posts from Supabase into Elasticsearch:
+
+```bash
+
+curl http://localhost:3000/api/search/reindex
+
+```
+
+Kibana is available at http://localhost:5601 to inspect the `posts` index. Once running, the homepage search (`/?q=...`) automatically uses Elasticsearch with fuzzy matching, falling back to the standard Postgres search if Elasticsearch is offline.
 
   
 

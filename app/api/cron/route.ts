@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { TwitterApi } from 'twitter-api-v2';
+import { esClient, POSTS_INDEX, ensurePostsIndex } from '@/utils/elasticsearch/client';
 
 // Configurations
 const supabase = createClient(
@@ -186,6 +187,19 @@ export async function GET(req: NextRequest) {
 
     if (error) throw error;
 
+    // --- 3.5 INDEX IN ELASTICSEARCH (local study setup, non-blocking) ---
+    try {
+      await ensurePostsIndex();
+      await esClient.index({
+        index: POSTS_INDEX,
+        id: savedPost.id.toString(),
+        document: savedPost,
+        refresh: true,
+      });
+      console.log('🔎 Post indexed in Elasticsearch.');
+    } catch (esErr) {
+      console.error('Elasticsearch indexing skipped/failed:', esErr);
+    }
 
     // --- 4. POST TO TWITTER ---
     try {

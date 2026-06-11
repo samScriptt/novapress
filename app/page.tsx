@@ -5,6 +5,7 @@ import { ArrowRight, Clock, Hash, Zap } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { enUS } from 'date-fns/locale';
 import { TopicVoting } from '@/components/TopicVoting';
+import { searchPosts } from '@/utils/elasticsearch/search';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -36,17 +37,45 @@ export default async function Home({ searchParams }: HomeProps) {
   }
   // ------------------------------------
 
-  let query = supabase
-    .from('posts')
-    .select('*', { count: 'exact' })
-    .order('created_at', { ascending: false })
-    .range(from, to);
+  let posts: any[] | null = [];
+  let count = 0;
 
   if (searchQuery) {
-    query = query.or(`title.ilike.%${searchQuery}%,summary.ilike.%${searchQuery}%`);
-  }
+    try {
+      // Elasticsearch: fuzzy/typo-tolerant search over title, summary and tags
+      const { ids, total } = await searchPosts(searchQuery, from, to - from + 1);
+      count = total;
 
-  const { data: posts, count } = await query;
+      if (ids.length > 0) {
+        const { data } = await supabase.from('posts').select('*').in('id', ids);
+        const postsById = new Map((data || []).map((p) => [p.id, p]));
+        posts = ids.map((id) => postsById.get(id)).filter(Boolean);
+      } else {
+        posts = [];
+      }
+    } catch (err) {
+      console.error('Elasticsearch unavailable, falling back to ilike search:', err);
+
+      const { data, count: ilikeCount } = await supabase
+        .from('posts')
+        .select('*', { count: 'exact' })
+        .order('created_at', { ascending: false })
+        .or(`title.ilike.%${searchQuery}%,summary.ilike.%${searchQuery}%`)
+        .range(from, to);
+
+      posts = data || [];
+      count = ilikeCount || 0;
+    }
+  } else {
+    const { data, count: totalCount } = await supabase
+      .from('posts')
+      .select('*', { count: 'exact' })
+      .order('created_at', { ascending: false })
+      .range(from, to);
+
+    posts = data || [];
+    count = totalCount || 0;
+  }
   
   const heroPost = (!searchQuery && currentPage === 1 && posts?.length) ? posts[0] : null;
   const gridPosts = heroPost ? posts!.slice(1) : (posts || []);
